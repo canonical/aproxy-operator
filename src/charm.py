@@ -13,6 +13,7 @@ develop a new k8s charm using the Operator Framework:
 https://discourse.charmhub.io/t/4208
 """
 
+import os
 import logging
 import typing
 
@@ -22,10 +23,8 @@ from ops import pebble
 # Log messages can be retrieved using juju debug-log
 logger = logging.getLogger(__name__)
 
-VALID_LOG_LEVELS = ["info", "debug", "warning", "error", "critical"]
 
-
-class IsCharmsTemplateCharm(ops.CharmBase):
+class AproxyCharm(ops.CharmBase):
     """Charm the service."""
 
     def __init__(self, *args: typing.Any):
@@ -36,6 +35,7 @@ class IsCharmsTemplateCharm(ops.CharmBase):
         """
         super().__init__(*args)
         self.framework.observe(self.on.httpbin_pebble_ready, self._on_httpbin_pebble_ready)
+        self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
 
     def _on_httpbin_pebble_ready(self, event: ops.PebbleReadyEvent) -> None:
@@ -60,6 +60,18 @@ class IsCharmsTemplateCharm(ops.CharmBase):
         # https://documentation.ubuntu.com/juju/latest/reference/status/index.html
         self.unit.status = ops.ActiveStatus()
 
+    def _on_install(self, event: ops.InstallEvent):
+        """Handle install event."""
+        self.unit.status = ops.MaintenanceStatus("Installing aproxy snap")
+
+        target_proxy = self.config.get("proxy-address")
+        if not target_proxy:
+            self.unit.status = ops.BlockedStatus("Missing target proxy address in config.")
+
+        os.system(f"snap install aproxy --edge")
+        os.system(f"snap set aproxy proxy={target_proxy}:3128")
+        self.unit.status = ops.ActiveStatus("Ready")
+
     def _on_config_changed(self, event: ops.ConfigChangedEvent) -> None:
         """Handle changed configuration.
 
@@ -73,27 +85,11 @@ class IsCharmsTemplateCharm(ops.CharmBase):
             event: event triggering the handler.
         """
         # Fetch the new config value
-        log_level = str(self.model.config["log-level"]).lower()
+        proxy_address = str(self.model.config["proxy-address"]).lower()
+        no_proxy = str(self.model.config["no-proxy"]).lower()
+        intercept_ports = str(self.model.config["intercept-ports"]).lower()
 
-        # Do some validation of the configuration option
-        if log_level in VALID_LOG_LEVELS:
-            # The config is good, so update the configuration of the workload
-            container = self.unit.get_container("httpbin")
-            # Verify that we can connect to the Pebble API in the workload container
-            if container.can_connect():
-                # Push an updated layer with the new config
-                container.add_layer("httpbin", self._pebble_layer, combine=True)
-                container.replan()
-
-                logger.debug("Log level for gunicorn changed to '%s'", log_level)
-                self.unit.status = ops.ActiveStatus()
-            else:
-                # We were unable to connect to the Pebble API, so we defer this event
-                event.defer()
-                self.unit.status = ops.WaitingStatus("waiting for Pebble API")
-        else:
-            # In this case, the config option is bad, so block the charm and notify the operator.
-            self.unit.status = ops.BlockedStatus("invalid log level: '{log_level}'")
+        # Validate the config
 
     @property
     def _pebble_layer(self) -> pebble.LayerDict:
@@ -116,4 +112,4 @@ class IsCharmsTemplateCharm(ops.CharmBase):
 
 
 if __name__ == "__main__":  # pragma: nocover
-    ops.main.main(IsCharmsTemplateCharm)
+    ops.main.main(AproxyCharm)
