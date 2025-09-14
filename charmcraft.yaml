@@ -10,19 +10,18 @@ name: aproxy
 title: Aproxy Subordinate Charm
 summary: A subordinate charm that deploys the aproxy application.
 links:
-  documentation: https://discourse.charmhub.io
+  documentation: https://discourse.charmhub.io/aproxy-operator
   issues: https://github.com/canonical/aproxy-operator/issues
   source: https://github.com/canonical/aproxy-operator
   contact: https://launchpad.net/~canonical-is-devops
 
 description: |
-  A subordinate charm built on top of the aproxy application.
+  The Aproxy subordinate charm installs and manages the aproxy snap to transparently
+  intercept per-unit HTTP/HTTPS traffic and forward it to a target proxy, while preserving
+  the original hostname.
 
-  A paragraph of one to three short sentences, that describe what the charm does.
-
-  A third paragraph that explains what need the charm meets.
-
-  Finally, a paragraph that describes whom the charm is useful for.
+  This charm is useful in environments that require transparent proxying for compliance,
+  monitoring, or traffic redirection.
 
 bases:
   - build-on:
@@ -45,13 +44,13 @@ config:
       description: Configures the target proxy IP address for traffic forwarding.
       type: string
     no-proxy:
-      description: Comma-separated list of addresses that should bypass the proxy.
-      default: "127.0.0.1,localhost"
+      description: Comma-separated list of IP addresses that should bypass the proxy.
+      default: "127.0.0.1"
       type: string
     intercept-ports:
       description: |
         Comma-separated list of ports to intercept and forward through the proxy.
 
-        Support ranges (ex: "1024-35655"), some semantic working “ALL”, or list of ranges (ex: "80-90,1024-2048")
+        Support ranges (ex: "1024-35655"), the keyword “ALL”, or multiple ranges (ex: "80-90,1024-2048")
       default: "80,443"
       type: string
