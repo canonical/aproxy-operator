@@ -1,80 +1,71 @@
-<!--
-Avoid using this README file for information that is maintained or published elsewhere, e.g.:
-
-* metadata.yaml > published on Charmhub
-* documentation > published on (or linked to from) Charmhub
-* detailed contribution guide > documentation or CONTRIBUTING.md
-
-Use links instead.
--->
-<!--
-NOTE: This template has the documentation under the `docs-template` due with issues with discourse-gatekeeper. The `docs-template` directory must be changed to `docs` after using this template to ensure discourse-gatekeeper correctly identifies the documentation changes.
--->
-# platform-engineering-charm-template
+# aproxy-operator
 <!-- Use this space for badges -->
+[![Charmhub](https://charmhub.io/aproxy-operator/badge.svg)](https://charmhub.io/aproxy-operator)
+[![CI](https://github.com/canonical/aproxy-operator/actions/workflows/ci.yaml/badge.svg)](https://github.com/canonical/aproxy-operator/actions)
 
-Describe your charm in 1-2 sentences. Include the software that the charm deploys (if applicable), and the substrate (VM/K8s).
+A subordinate charm that transparently intercepts per-unit HTTP/HTTPS traffic and forwards it to a target proxy. It deployes the [Aproxy](https://github.com/canonical/aproxy) snap application.
 
-Like any Juju charm, this charm supports one-line deployment, configuration, integration, scaling, and more. For Charmed {Name}, this includes:
-* list or summary of app-specific features
+Like any Juju charm, this charm supports one-line deployment, configuration, integration, scaling, and more. For Charmed Aproxy, this includes:
+* transparent HTTP/HTTPS interception via nftables REDIRECT
+* per-unit forwarding to a configured target proxy
+* configurable no-proxy domains and intercept ports
 
-For information about how to deploy, integrate, and manage this charm, see the Official [platform-engineering-charm-template Documentation](external link).
+For information about how to deploy, integrate, and manage this charm, see the Official [aproxy-operator Documentation](https://charmhub.io/aproxy-operator).
 
 ## Get started
-<!--If the charm already contains a relevant how-to guide or tutorial in its documentation,
-use this section to link the documentation. You don’t need to duplicate documentation here.
-If the tutorial is more complex than getting started, then provide brief descriptions of the
-steps needed for the simplest possible deployment. Make sure to include software and hardware
-prerequisites.
-
-This section could be structured in the following way:
 
 ### Set up
-<Steps for setting up the environment (e.g. via Multipass)>
+Ensure you have a working [Juju](https://documentation.ubuntu.com/juju/latest/tutorial/) environment.  
+For quick local testing, you can use [Multipass](https://canonical.com/multipass/install).
 
 ### Deploy
-<Steps for deploying the charm>
+To deploy aproxy-operator alongside a principal charm (for example, WordPress):
 
--->
+```bash
+juju deploy wordpress
+juju deploy aproxy-operator
+juju add-relation aproxy-operator wordpress
+juju config aproxy-operator proxy-address=$TARGET_PROXY
+```
 
 ### Basic operations
-<!--Brief walkthrough of performing standard configurations or operations.
+Update the target proxy address:
 
-Use this section is to emphasize features or capabilities of the charm.
-Link to any relevant how-to guides here.
+```bash
+juju config aproxy-operator proxy-address=$MODIFIED_PROXY
+```
 
-Use this section to provide information on important actions, required configurations, or
-other operations the user should know about. You don’t need to list every action or configuration.
-Link the Charmhub documentation for actions and configurations if you write about them.
+Exclude domains from interception:
 
-You may also want to link to the `charmcraft.yaml` file here.
--->
+```bash
+juju config aproxy-operator no-proxy="127.0.0.1"
+```
 
-## (Optional) Integrations
-<!-- Information about particularly relevant interfaces, endpoints or libraries related to the
-charm. For example, peer relation endpoints required by other charms for integration.
+Stop interception (disables nftables redirection):
 
-Otherwise, include a link the Charmhub documentation on integrations.
---> 
+```bash
+juju run aproxy-operator/0 stop
+```
+
+See the [charmcraft.yaml](https://github.com/canonical/aproxy-operator/blob/main/charmcraft.yaml) file for all configuration options and actions.
+
+## Integrations
+The charm is designed to run as a subordinate and integrates with any principal charm that generates HTTP/HTTPS traffic.
+Relations enable it to transparently forward requests through the configured proxy without modifying the principal charm itself.
+
+See the Charmhub documentation on [integrations](https://charmhub.io/aproxy-operator/integrations) for more details.
 
 ## Learn more
-<!-- 
-Provide a list of resources, including the official documentation, developer documentation,
-an official website for the software and a troubleshooting guide. Note that this list is not
-exhaustive or always relevant for every charm. If there is no official troubleshooting guide,
-include a link to the relevant Matrix channel.
--->
-
-* [Read more]() <!--Link to the charm's official documentation-->
-* [Developer documentation]() <!--Link to any developer documentation (could be upstream)-->
-* [Official webpage]() <!--(Optional) Link to official upstream webpage/blog/marketing content--> 
-* [Troubleshooting]() <!--(Optional) Link to a page or section about troubleshooting/FAQ-->
+* [Read more](https://charmhub.io/aproxy-operator)
+* [Developer documentation](https://charmhub.io/aproxy-operator)
+* [Official webpage](https://charmhub.io/aproxy-operator)
+* [Troubleshooting](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 
 ## Project and community
-* [Issues]() <!--Link to GitHub issues (if applicable)-->
-* [Contributing]() <!--Link to any contribution guides, preferably for the source code--> 
-* [Matrix]() <!--Link to contact info (if applicable), e.g. Matrix channel-->
-* [Launchpad]() <!--Link to Launchpad (if applicable)-->
+* [Issues](https://github.com/canonical/aproxy-operator/issues)
+* [Contributing](https://github.com/canonical/aproxy-operator/blob/main/CONTRIBUTING.md)
+* [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
+* [Launchpad]()
 
-## (Optional) Licensing and trademark
-
+## Licensing and trademark
+This charm is licensed under the [Apache License, Version 2.0](https://github.com/canonical/aproxy-operator?tab=Apache-2.0-1-ov-file). Copyright 2025 Canonical Ltd.
