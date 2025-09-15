@@ -11,8 +11,8 @@ through aproxy.
 """
 
 import logging
-import subprocess
 import socket
+import subprocess
 import typing
 
 import ops
@@ -58,12 +58,14 @@ class AproxyCharm(ops.CharmBase):
             self.unit.status = ops.BlockedStatus("Failed to install aproxy snap.")
             return
 
+        self.unit.status = ops.ActiveStatus("Aproxy snap successfully installed.")
+
     def _on_start(self, event: ops.StartEvent) -> None:
         """Handle start event for configuring nftables rules."""
         self.unit.status = ops.MaintenanceStatus("Starting aproxy interception service...")
 
-        self._configure_aproxy()
-        self._apply_nftables_rules()
+        if not self._is_aproxy_configured():
+            return
         self.unit.status = ops.ActiveStatus("Aproxy interception service started.")
 
     def _on_config_changed(self, event: ops.ConfigChangedEvent) -> None:
@@ -75,8 +77,8 @@ class AproxyCharm(ops.CharmBase):
         self.no_proxy: str = self.config.get("no-proxy")
         self.intercept_ports: str = self.config.get("intercept-ports")
 
-        self._configure_aproxy()
-        self._apply_nftables_rules()
+        if not self._is_aproxy_configured():
+            return
         self.unit.status = ops.ActiveStatus("Proxy reconfigured and interception enabled.")
 
     def _on_stop(self, event: ops.StopEvent) -> None:
@@ -106,7 +108,7 @@ class AproxyCharm(ops.CharmBase):
 
     # -------------------- Helpers --------------------
 
-    def _check_if_proxy_reachable(self, host: str, port: int = 3128) -> bool:
+    def _is_proxy_reachable(self, host: str, port: int = 3128) -> bool:
         """Check if the target proxy is reachable on the specified port.
 
         Args:
@@ -120,20 +122,20 @@ class AproxyCharm(ops.CharmBase):
             logger.error(f"Proxy {host}:{port} is not reachable: {e}")
             return False
 
-    def _configure_aproxy(self) -> None:
+    def _is_target_proxy_configured(self) -> bool:
         """Configure aproxy snap with proxy settings."""
         if not self.target_proxy:
             self.unit.status = ops.BlockedStatus("Missing target proxy address in config.")
-            return
+            return False
 
         self.unit.status = ops.WaitingStatus("Waiting for proxy connectivity check...")
 
-        if not self._check_if_proxy_reachable(self.target_proxy, 3128):
+        if not self._is_proxy_reachable(self.target_proxy, 3128):
             logger.warning("Proxy is not reachable at %s:3128", self.target_proxy)
             self.unit.status = ops.BlockedStatus(
                 f"Target proxy is unreachable at {self.target_proxy}:3128."
             )
-            return
+            return False
 
         try:
             subprocess.run(
@@ -144,6 +146,8 @@ class AproxyCharm(ops.CharmBase):
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to configure aproxy snap: {e}")
             self.unit.status = ops.BlockedStatus("Failed to configure aproxy snap.")
+            return False
+        return True
 
     def _format_ports(self, ports: str) -> str:
         """Format a comma-separated list of ports into nftables port set syntax.
@@ -155,7 +159,7 @@ class AproxyCharm(ops.CharmBase):
             return "0-65535"
         return ", ".join(port.strip() for port in ports.split(",") if port.strip())
 
-    def _apply_nftables_rules(self) -> None:
+    def _is_nftables_rules_applied(self) -> bool:
         """Apply nftables rules for transparent proxy interception.
 
         - Redirect outbound traffic on configured intercept_ports to aproxy (127.0.0.1:8443).
@@ -197,6 +201,13 @@ class AproxyCharm(ops.CharmBase):
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to apply nftables rules: {e}")
             self.unit.status = ops.BlockedStatus("Failed to configure nftables.")
+            return False
+        return True
+
+    def _is_aproxy_configured(self) -> bool:
+        if self._is_target_proxy_configured() and self._is_nftables_rules_applied():
+            return True
+        return False
 
 
 if __name__ == "__main__":  # pragma: nocover
