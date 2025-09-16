@@ -35,6 +35,16 @@ requires:
     interface: aproxy
     scope: container
 
+parts:
+  charm:
+    plugin: charm
+    source: .
+    charm-entrypoint: src/charm.py
+    charm-binary-python-packages: []
+    charm-python-packages: []
+    charm-requirements: [requirements.txt]
+    charm-strict-dependencies: false
+
 # See https://documentation.ubuntu.com/charmcraft/stable/reference/files/charmcraft-yaml-file/
 # for guidance.
 config:

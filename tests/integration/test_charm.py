@@ -5,7 +5,6 @@
 
 """Integration tests."""
 
-import asyncio
 import logging
 from pathlib import Path
 
