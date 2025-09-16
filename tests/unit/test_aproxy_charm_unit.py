@@ -4,7 +4,7 @@
 # pylint: disable=duplicate-code,missing-function-docstring,unused-argument
 """Unit tests for Aproxy subordinate charm."""
 
-# Ignore B404:blacklist since all subprocesses are run with predefined executables.
+# nosec B404: subprocess usage is intentional and safe (predefined executables only).
 import subprocess  # nosec
 
 import pytest

@@ -13,7 +13,7 @@ through aproxy.
 import logging
 import socket
 
-# Ignore B404:blacklist since all subprocesses are run with predefined executables.
+# nosec B404: subprocess usage is intentional and safe (predefined executables only).
 import subprocess  # nosec
 import typing
 
