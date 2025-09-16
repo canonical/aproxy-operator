@@ -1,32 +1,80 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# pylint: disable=duplicate-code,missing-function-docstring
-"""Unit tests."""
+# pylint: disable=duplicate-code,missing-function-docstring,unused-argument
+"""Unit tests for Aproxy subordinate charm."""
+
+# nosec B404: subprocess usage is intentional and safe (predefined executables only).
+import subprocess  # nosec
 
 import pytest
 from ops import testing
+from scenario.errors import UncaughtCharmError
+
 from charm import AproxyCharm
-import subprocess
 
 
 @pytest.fixture(autouse=True)
-def patch_subprocess_success(monkeypatch):
+def _patch_subprocess_success(monkeypatch):
+    """Patch subprocess.run to always succeed.
+
+    Arg:
+        monkeypatch: pytest fixture to patch functions.
+    """
+
     def fake_run(cmd, *a, **k):
+        """Return fake subprocess.run that always succeeds.
+
+        Args:
+            cmd: Command to run.
+            a: Additional positional arguments.
+            k: Additional keyword arguments.
+
+        Returns:
+            subprocess.CompletedProcess: Simulated successful command execution.
+        """
         return subprocess.CompletedProcess(cmd, 0)
 
     monkeypatch.setattr("subprocess.run", fake_run)
 
 
-@pytest.fixture
-def patch_subprocess_failure(monkeypatch):
+@pytest.fixture(name="patch_subprocess_failure")
+def _patch_subprocess_failure(monkeypatch):
+    """Patch subprocess.run to simulate failures based on flags.
+
+    Arg:
+        monkeypatch: pytest fixture to patch functions.
+    """
+
     def _do_patch(
         is_install_failure: bool = False,
         is_set_failure: bool = False,
         is_nft_failure: bool = False,
         is_remove_failure: bool = False,
     ):
+        """Patch subprocess.run to simulate failures.
+
+        Args:
+            is_install_failure: Simulate snap install failure if True.
+            is_set_failure: Simulate snap set failure if True.
+            is_nft_failure: Simulate nftables command failure if True.
+            is_remove_failure: Simulate snap remove failure if True.
+        """
+
         def fake_run(cmd, *a, **k):
+            """Return fake subprocess.run that simulates failures based on flags.
+
+            Args:
+                cmd: Command to run.
+                a: Additional positional arguments.
+                k: Additional keyword arguments.
+
+            Raises:
+                CalledProcessError: If simulating a failure for the command.
+
+            Returns:
+                subprocess.CompletedProcess: Simulated successful command execution if no failure.
+            """
             if is_install_failure and cmd[:3] == ["snap", "install", "aproxy"]:
                 raise subprocess.CalledProcessError(1, cmd)
             if is_set_failure and cmd[:3] == ["snap", "set", "aproxy"]:
@@ -42,9 +90,12 @@ def patch_subprocess_failure(monkeypatch):
     return _do_patch
 
 
-@pytest.fixture
-def patch_proxy_check(monkeypatch):
+@pytest.fixture(name="patch_proxy_check")
+def _patch_proxy_check(monkeypatch):
+    """Patch _is_proxy_reachable to return a specified value."""
+
     def _do_patch(is_reachable: bool = True):
+        """Patch _is_proxy_reachable to return the specified value."""
         monkeypatch.setattr(
             "charm.AproxyCharm._is_proxy_reachable",
             lambda *a, **k: is_reachable,
@@ -55,7 +106,7 @@ def patch_proxy_check(monkeypatch):
 
 def test_install_with_proxy_config_should_succeed():
     """
-    arrange: declare a context and input state with proxy configuration.
+    arrange: declare a context and input state with proxy config.
     act: run the install event.
     assert: status is active with a message indicating successful snap installation.
     """
@@ -69,7 +120,7 @@ def test_install_with_proxy_config_should_succeed():
 
 def test_install_without_proxy_config_should_fail():
     """
-    arrange: declare a context and input state without proxy configuration.
+    arrange: declare a context and input state without proxy config.
     act: run the install event.
     assert: status is blocked with a message indicating missing proxy address in config.
     """
@@ -83,22 +134,23 @@ def test_install_without_proxy_config_should_fail():
 
 def test_install_with_snap_install_failure_should_fail(patch_subprocess_failure):
     """
-    arrange: declare a context, input state with proxy configuration, and simulate snap install failure.
+    arrange: declare a context, input state with proxy config, and simulate snap install failure.
     act: run the install event.
-    assert: status is blocked with a message indicating snap installation failure.
+    assert: CalledProcessError is raised.
     """
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={"proxy-address": "target.proxy"})
     patch_subprocess_failure(is_install_failure=True)
 
-    out = ctx.run(ctx.on.install(), state)
+    with pytest.raises(UncaughtCharmError) as excinfo:
+        ctx.run(ctx.on.install(), state)
 
-    assert out.unit_status == testing.BlockedStatus("Failed to install aproxy snap.")
+    assert isinstance(excinfo.value.__cause__, subprocess.CalledProcessError)
 
 
 def test_start_proxy_reachable_should_succeed(patch_proxy_check):
     """
-    arrange: declare a context, input state with proxy configuration, and simulate reachable proxy.
+    arrange: declare a context, input state with proxy config, and simulate reachable proxy.
     act: run the start event.
     assert: status is active with a message indicating the interception service started.
     """
@@ -113,7 +165,7 @@ def test_start_proxy_reachable_should_succeed(patch_proxy_check):
 
 def test_start_proxy_unreachable_should_fail(patch_proxy_check):
     """
-    arrange: declare a context, input state with proxy configuration, and simulate unreachable proxy.
+    arrange: declare a context, input state with proxy config, and simulate unreachable proxy.
     act: run the start event.
     assert: status is blocked with a message indicating the proxy is unreachable.
     """
@@ -130,9 +182,9 @@ def test_start_proxy_unreachable_should_fail(patch_proxy_check):
 
 def test_start_proxy_snap_config_failure_should_fail(patch_proxy_check, patch_subprocess_failure):
     """
-    arrange: declare a context, input state with proxy configuration, simulate reachable proxy, and snap config failure.
+    arrange: declare a context, input state with proxy config, and simulate snap config failure.
     act: run the start event.
-    assert: status is blocked with a message indicating snap configuration failure.
+    assert: status is blocked with a message indicating snap config failure.
     """
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={"proxy-address": "target.proxy"})
@@ -146,9 +198,9 @@ def test_start_proxy_snap_config_failure_should_fail(patch_proxy_check, patch_su
 
 def test_start_nftables_failure_should_fail(patch_proxy_check, patch_subprocess_failure):
     """
-    arrange: declare a context, input state with proxy configuration, simulate reachable proxy, and nftables failure.
+    arrange: declare a context, input state with proxy config, and simulate nftables failure.
     act: run the start event.
-    assert: status is blocked with a message indicating nftables configuration failure.
+    assert: status is blocked with a message indicating nftables config failure.
     """
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={"proxy-address": "target.proxy"})
@@ -162,9 +214,9 @@ def test_start_nftables_failure_should_fail(patch_proxy_check, patch_subprocess_
 
 def test_config_changed_should_succeed(patch_proxy_check):
     """
-    arrange: declare a context, input state with modified proxy configuration, and simulate reachable proxy.
+    arrange: declare a context and input state with modified proxy config.
     act: run the config_changed event.
-    assert: status is active with a message indicating proxy reconfiguration and interception enabled.
+    assert: status is active with a message indicating proxy reconfig and interception enabled.
     """
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={"proxy-address": "modified.proxy"})
@@ -177,7 +229,7 @@ def test_config_changed_should_succeed(patch_proxy_check):
 
 def test_config_changed_without_proxy_config_should_fail():
     """
-    arrange: declare a context and input state without proxy configuration.
+    arrange: declare a context and input state without proxy config.
     act: run the config_changed event.
     assert: status is blocked with a message indicating missing proxy address in config.
     """
@@ -191,7 +243,7 @@ def test_config_changed_without_proxy_config_should_fail():
 
 def test_config_changed_with_unreachable_proxy_should_fail(patch_proxy_check):
     """
-    arrange: declare a context, input state with modified proxy configuration, and simulate unreachable proxy.
+    arrange: declare a context, input state with modified config, and simulate unreachable proxy.
     act: run the config_changed event.
     assert: status is blocked with a message indicating the proxy is unreachable.
     """
