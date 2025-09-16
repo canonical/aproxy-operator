@@ -23,17 +23,12 @@ description: |
   This charm is useful in environments that require transparent proxying for compliance,
   monitoring, or traffic redirection.
 
-bases:
-  - build-on:
-    - name: ubuntu
-      channel: "24.04"
-      architectures:
-        - amd64
-    run-on:
-    - name: ubuntu
-      channel: "24.04"
-      architectures:
-        - amd64
+base: ubuntu@24.04
+build-base: ubuntu@24.04
+platforms: 
+  amd64:
+    build-on: [amd64]
+    build-for: [amd64]
 
 requires:
   aproxy:

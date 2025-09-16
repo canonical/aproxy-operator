@@ -17,23 +17,29 @@ logger = logging.getLogger(__name__)
 
 CHARMCRAFT_DATA = yaml.safe_load(Path("./charmcraft.yaml").read_text(encoding="utf-8"))
 APP_NAME = CHARMCRAFT_DATA["name"]
+PRINCIPAL = "wordpress"
 
 
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, pytestconfig: pytest.Config):
-    """Deploy the charm together with related charms.
+    """Build the charm and deploy it with a principal application."""
+    # Build the charm
+    charm = await ops_test.build_charm(".")
+    await ops_test.model.deploy(charm, application_name=APP_NAME)
 
-    Assert on the unit status before any relations/configurations take place.
-    """
-    # Deploy the charm and wait for active/idle status
-    charm = pytestconfig.getoption("--charm-file")
-    resources = {"httpbin-image": CHARMCRAFT_DATA["resources"]["httpbin-image"]["upstream-source"]}
-    assert ops_test.model
-    await asyncio.gather(
-        ops_test.model.deploy(
-            f"./{charm}", resources=resources, application_name=APP_NAME, series="jammy"
-        ),
-        ops_test.model.wait_for_idle(
-            apps=[APP_NAME], status="active", raise_on_blocked=True, timeout=1000
-        ),
+    # Deploy a principal application to relate with
+    await ops_test.model.deploy("wordpress", application_name=PRINCIPAL, channel="stable")
+    await ops_test.model.add_relation(APP_NAME, PRINCIPAL)
+
+    # Wait for both applications to be active
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, PRINCIPAL],
+        status="active",
+        timeout=1000,
+        raise_on_blocked=True,
     )
+
+    aproxy_app = ops_test.model.applications[APP_NAME]
+    for unit in aproxy_app.units:
+        assert unit.workload_status == "active"
+        assert unit.workload_status_message == "Aproxy interception service started."
