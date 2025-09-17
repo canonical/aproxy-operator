@@ -1,22 +1,25 @@
-# <charm-name> Operator
+# Aproxy Operator
 
-<!-- A single sentence that says what the product is, succinctly and memorably. Add a 1-2 sentence description of what the charm software does. -->
+A [Juju](https://juju.is/) [charm](https://documentation.ubuntu.com/juju/3.6/reference/charm/) deploying and managing the [aproxy snap](https://snapcraft.io/install/aproxy/ubuntu) as a subordinate machine charm.
 
-A [Juju](https://juju.is/) [charm](https://documentation.ubuntu.com/juju/3.6/reference/charm/) deploying and managing <Charm software> on 
-Kubernetes. 
-
-<!-- A paragraph of 2-5 short sentences, that describes what the product does and what need the product meets. -->
+The aproxy charm installs and configures the aproxy snap and applies nftables rules to transparently intercept outbound HTTP/HTTPS traffic from a principal charm, forwarding it through an upstream proxy.
 
 Like any Juju charm, this charm supports one-line deployment, configuration, integration, scaling, and more. 
-For <charm-name>, this includes:
-* list or summary of app-specific features
+For aproxy, this includes:
 
-The <charm-name> charm allows for deployment on many different Kubernetes platforms, from [MicroK8s](https://microk8s.io/) to 
-[Charmed Kubernetes](https://ubuntu.com/kubernetes) to public cloud Kubernetes offerings.
+- Installing and configuring the aproxy snap.
 
-<!-- Finally, a paragraph that describes whom the product is useful for. -->
+- Enforcing nftables rules to transparently redirect outbound traffic.
 
-This charm will make operating <charm-software> simple and straightforward for DevOps or SRE teams through Juju's clean interface. 
+- Forwarding HTTP/HTTPS requests through a configurable upstream proxy.
+
+- Supporting exclusions for specific destinations (`no-proxy`).
+
+- Configurable interception ports (`intercept-ports`).
+
+The aproxy charm is a subordinate and can be attached to any principal application to ensure its outbound traffic is transparently proxied. It runs on machines hosting the principal charm and is compatible with a wide range of Juju-managed environments.
+
+This charm makes operating aproxy simple and straightforward for DevOps or SRE teams through Juju’s clean interface, ensuring consistent policy enforcement for egress traffic without requiring per-application configuration.
 
 ## In this documentation
 
@@ -30,23 +33,23 @@ This charm will make operating <charm-software> simple and straightforward for D
 Documentation is an important part of this project, and we take the same open-source approach
 to the documentation as the code. As such, we welcome community contributions, suggestions, and
 constructive feedback on our documentation.
-See [How to contribute](link to contribute page) for more information.
+See [How to contribute](https://charmhub.io/aproxy/docs/contribute) for more information.
 
 
 If there's a particular area of documentation that you'd like to see that's missing, please 
-[file a bug](link to issues page).
+[file a bug](https://github.com/canonical/aproxy-operator/issues).
 
 ## Project and community
 
-The <charm-name> Operator is a member of the Ubuntu family. It's an open-source project that warmly welcomes community 
+The aproxy Operator is a member of the Ubuntu family. It's an open-source project that warmly welcomes community 
 projects, contributions, suggestions, fixes, and constructive feedback.
 
 - [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
 - [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
-- [Contribute](link to Contribute page)
+- [Contribute](https://charmhub.io/aproxy/docs/contribute)
 
-Thinking about using the <charm-name> Operator for your next project? 
+Thinking about using the aproxy Operator for your next project? 
 [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
 
 # Contents
