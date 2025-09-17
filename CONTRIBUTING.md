@@ -149,7 +149,7 @@ juju add-model charm-dev
 # Enable DEBUG logging
 juju model-config logging-config="<root>=INFO;unit=DEBUG"
 # Deploy the charm with a required config
-juju deploy ./aproxy.charm --config proxy-address=<target-proxy>
+juju deploy ./aproxy.charm --config proxy-address=<target.proxy>
 # Integrate with a principal charm
 juju integrate aproxy <principal-charm>
 ```
