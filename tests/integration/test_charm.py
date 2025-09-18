@@ -24,7 +24,7 @@ async def test_build_and_deploy(ops_test: OpsTest, pytestconfig: pytest.Config):
     """Build the charm and deploy it with a principal application."""
     # Build the charm
     charm = await ops_test.build_charm(".")
-    await ops_test.model.deploy(charm, application_name=APP_NAME)
+    await ops_test.model.deploy(charm, application_name=APP_NAME, num_units=0)
 
     # Deploy a principal application to relate with
     await ops_test.model.deploy("wordpress", application_name=PRINCIPAL, channel="stable")
