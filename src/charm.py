@@ -52,10 +52,6 @@ class AproxyCharm(ops.CharmBase):
         """
         self.unit.status = ops.MaintenanceStatus("Installing aproxy snap...")
 
-        if not self._target_proxy:
-            self.unit.status = ops.BlockedStatus("Missing target proxy address in config.")
-            return
-
         try:
             # nosec B404,B603,B607: calling trusted system binary with predefined args
             subprocess.run(["snap", "install", "aproxy", "--edge"], check=True)  # nosec
@@ -198,13 +194,13 @@ class AproxyCharm(ops.CharmBase):
             }}
 
             chain output {{
-                type nat hook output priority -100; policy accept;
+                type nat hook output priority -150; policy accept;
                 ip daddr != {{ 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 }} \
                     tcp dport {{ {ports_clause} }} counter dnat to 127.0.0.1:8443
             }}
 
             chain input {{
-                type filter hook input priority 0; policy accept;
+                type filter hook input priority filter; policy accept;
                 tcp dport 8443 drop
             }}
         }}

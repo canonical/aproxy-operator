@@ -5,40 +5,53 @@
 
 """Integration tests."""
 
-import logging
-from pathlib import Path
-
+import jubilant
 import pytest
-import yaml
-from pytest_operator.plugin import OpsTest
-
-logger = logging.getLogger(__name__)
-
-CHARMCRAFT_DATA = yaml.safe_load(Path("./charmcraft.yaml").read_text(encoding="utf-8"))
-APP_NAME = CHARMCRAFT_DATA["name"]
-PRINCIPAL = "any-charm"
 
 
-@pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, pytestconfig: pytest.Config):
-    """Build the charm and deploy it with a principal application."""
-    # Build the charm
-    charm = await ops_test.build_charm(".")
-    await ops_test.model.deploy(charm, application_name=APP_NAME, num_units=0)
+def test_aproxy_active(juju, aproxy_app):
+    """
+    arrange: deploy aproxy subordinate charm on ubuntu.
+    act: wait for units to settle.
+    assert: aproxy subordinate reaches active status.
+    """
+    juju.wait(jubilant.all_active, timeout=10 * 60)
+    units = juju.status().get_units(aproxy_app.name)
+    assert all(u.workload_status.current == "active" for u in units.values())
 
-    # Deploy a principal application to relate with
-    await ops_test.model.deploy("any-charm", application_name=PRINCIPAL, channel="stable")
-    await ops_test.model.add_relation(APP_NAME, PRINCIPAL)
 
-    # Wait for both applications to be active
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME, PRINCIPAL],
-        status="active",
-        timeout=1000,
-        raise_on_blocked=True,
-    )
+def test_proxy_configuration(principal_app):
+    """
+    arrange: ubuntu with aproxy subordinate.
+    act: make an HTTPS request from inside the unit.
+    assert: traffic is transparently routed through aproxy.
+    """
+    # -s = silent, -o /dev/null = throw away body, -w = only output HTTP code
+    result = principal_app.ssh("curl -s -o /dev/null -w '%{http_code}' https://example.com")
+    assert result.strip() == "200", f"Expected 200 from example.com, got {result}"
 
-    aproxy_app = ops_test.model.applications[APP_NAME]
-    for unit in aproxy_app.units:
-        assert unit.workload_status == "active"
-        assert unit.workload_status_message == "Aproxy interception service started."
+
+def test_unreachable_proxy_blocks(juju, aproxy_app):
+    """
+    arrange: configure aproxy with unreachable proxy.
+    act: apply config with bogus proxy address.
+    assert: aproxy subordinate enters blocked state.
+    """
+    juju.cli("config", "aproxy", "proxy-address=unreachable.proxy")
+    juju.wait(jubilant.all_units_idle, timeout=5 * 60)
+    status = juju.status().get_units(aproxy_app.name)
+    unit = list(status.values())[0]
+    assert unit.workload_status.current == "blocked"
+
+
+def test_cleanup_on_removal(juju, aproxy_app, principal_app):
+    """
+    arrange: ubuntu with aproxy subordinate.
+    act: remove aproxy charm.
+    assert: no leftover proxy env vars on principal unit.
+    """
+    juju.remove_application(aproxy_app.name)
+    juju.wait(jubilant.all_active, timeout=10 * 60)
+
+    stdout = principal_app.ssh("env | grep -i proxy || true")
+    assert stdout.strip() == ""
