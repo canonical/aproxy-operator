@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 CHARMCRAFT_DATA = yaml.safe_load(Path("./charmcraft.yaml").read_text(encoding="utf-8"))
 APP_NAME = CHARMCRAFT_DATA["name"]
-PRINCIPAL = "wordpress"
+PRINCIPAL = "any-charm"
 
 
 @pytest.mark.abort_on_fail
@@ -27,7 +27,7 @@ async def test_build_and_deploy(ops_test: OpsTest, pytestconfig: pytest.Config):
     await ops_test.model.deploy(charm, application_name=APP_NAME, num_units=0)
 
     # Deploy a principal application to relate with
-    await ops_test.model.deploy("wordpress", application_name=PRINCIPAL, channel="stable")
+    await ops_test.model.deploy("any-charm", application_name=PRINCIPAL, channel="stable")
     await ops_test.model.add_relation(APP_NAME, PRINCIPAL)
 
     # Wait for both applications to be active
