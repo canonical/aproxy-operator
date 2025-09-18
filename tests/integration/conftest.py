@@ -22,7 +22,7 @@ def pytest_addoption(parser):
     """
     parser.addoption(
         "--charm-file",
-        action="append",
+        action="store",
         default=None,
         help="Path(s) to built charm file(s) to use in tests",
     )
@@ -33,14 +33,8 @@ def pytest_addoption(parser):
         help="Use an existing Juju model instead of creating a temporary one",
     )
     parser.addoption(
-        "--use-existing",
-        action="store_true",
-        default=False,
-        help="Use the currently active Juju model instead of creating a new one",
-    )
-    parser.addoption(
         "--keep-models",
-        action="store_true",
+        action="store",
         default=False,
         help="Keep Juju models around after tests instead of destroying them",
     )
@@ -88,12 +82,6 @@ def juju_fixture(request: pytest.FixtureRequest) -> typing.Generator[jubilant.Ju
     model = request.config.getoption("--model")
     if model:
         juju = jubilant.Juju(model=model)
-        yield juju
-        show_debug_log(juju)
-        return
-
-    if request.config.getoption("--use-existing", default=False):
-        juju = jubilant.Juju()
         yield juju
         show_debug_log(juju)
         return
