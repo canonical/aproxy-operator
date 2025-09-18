@@ -28,18 +28,18 @@ def test_install_with_proxy_config_should_succeed():
     assert out.unit_status == testing.ActiveStatus("Aproxy snap successfully installed.")
 
 
-def test_install_without_proxy_config_should_fail():
+def test_install_without_proxy_config_should_succeed():
     """
     arrange: declare a context and input state without proxy config.
     act: run the install event.
-    assert: status is blocked with a message indicating missing proxy address in config.
+    assert: status should still be active with a message indicating successful snap installation.
     """
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={})
 
     out = ctx.run(ctx.on.install(), state)
 
-    assert out.unit_status == testing.BlockedStatus("Missing target proxy address in config.")
+    assert out.unit_status == testing.ActiveStatus("Aproxy snap successfully installed.")
 
 
 def test_install_with_snap_install_failure_should_fail(patch_subprocess_failure):

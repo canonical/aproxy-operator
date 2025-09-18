@@ -6,7 +6,6 @@
 """Integration tests."""
 
 import jubilant
-import pytest
 
 
 def test_aproxy_active(juju, aproxy_app):

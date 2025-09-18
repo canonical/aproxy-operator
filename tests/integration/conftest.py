@@ -4,7 +4,9 @@
 """Fixtures for charm tests."""
 
 import pathlib
-import subprocess
+
+# nosec B404: subprocess usage is intentional and safe (predefined executables only).
+import subprocess  # nosec
 import typing
 
 import jubilant
@@ -12,6 +14,11 @@ import pytest
 
 
 def pytest_addoption(parser):
+    """Add custom command-line options to pytest.
+
+    Args:
+        parser: The pytest command-line parser.
+    """
     parser.addoption(
         "--charm-file",
         action="append",
@@ -68,6 +75,11 @@ def juju_fixture(request: pytest.FixtureRequest) -> typing.Generator[jubilant.Ju
     """Provide a Juju model for tests."""
 
     def show_debug_log(juju: jubilant.Juju) -> None:
+        """Show the last 1000 lines of the Juju debug log if any tests failed.
+
+        Args:
+            juju: Juju controller instance.
+        """
         if request.session.testsfailed:
             log = juju.debug_log(limit=1000)
             print(log, end="")
@@ -94,7 +106,12 @@ def juju_fixture(request: pytest.FixtureRequest) -> typing.Generator[jubilant.Ju
 
 @pytest.fixture(name="deploy_charms", scope="module")
 def deploy_charms_fixture(juju: jubilant.Juju, aproxy_charm_file: str):
-    """Deploy principal and subordinate charms for integration tests."""
+    """Deploy principal and subordinate charms for integration tests.
+
+    Args:
+        juju: Juju controller instance.
+        aproxy_charm_file: Path to the built aproxy charm file.
+    """
     juju.deploy("ubuntu", base="ubuntu@22.04")
     juju.deploy(aproxy_charm_file)
     juju.integrate("ubuntu", "aproxy")
@@ -106,10 +123,24 @@ class App:
     """Helper class for interacting with deployed applications."""
 
     def __init__(self, juju: jubilant.Juju, name: str) -> None:
+        """Construct.
+
+        Args:
+            juju: Juju controller instance.
+            name: Application name.
+        """
         self._juju = juju
         self.name = name
 
     def get_leader_unit(self) -> str:
+        """Return the leader unit name of the application.
+
+        Raises:
+            RuntimeError: If no leader unit is found.
+
+        Returns:
+            The leader unit name (e.g., "ubuntu/0").
+        """
         status = self._juju.status()
         leader = [u for u, unit in status.get_units(self.name).items() if unit.leader]
         if not leader:
@@ -117,6 +148,15 @@ class App:
         return leader[0]
 
     def ssh(self, cmd: str, *, unit_num: int | None = None) -> str:
+        """SSH into a unit and run a command.
+
+        Args:
+            cmd: Command to run.
+            unit_num: Unit number to target. If None, the leader unit is used.
+
+        Returns:
+            The command's standard output.
+        """
         unit_name = self.get_leader_unit() if unit_num is None else f"{self.name}/{unit_num}"
         return self._juju.ssh(target=unit_name, command=cmd)
 
