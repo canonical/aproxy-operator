@@ -37,7 +37,7 @@ def test_unreachable_proxy_blocks(juju, aproxy_app):
     assert: aproxy subordinate enters blocked state.
     """
     juju.cli("config", "aproxy", "proxy-address=unreachable.proxy")
-    juju.wait(jubilant.all_units_idle, timeout=5 * 60)
+    juju.wait(jubilant.all_agents_idle, timeout=5 * 60)
     status = juju.status().get_units(aproxy_app.name)
     unit = list(status.values())[0]
     assert unit.workload_status.current == "blocked"

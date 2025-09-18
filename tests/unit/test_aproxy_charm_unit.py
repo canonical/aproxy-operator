@@ -1,7 +1,7 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# pylint: disable=duplicate-code,missing-function-docstring,unused-argument
+# pylint: disable=unused-argument
 """Unit tests for Aproxy subordinate charm."""
 
 # nosec B404: subprocess usage is intentional and safe (predefined executables only).

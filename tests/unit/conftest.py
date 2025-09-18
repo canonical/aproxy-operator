@@ -1,6 +1,7 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# pylint: disable=unused-argument
 """Fixtures for charm tests."""
 
 # nosec B404: subprocess usage is intentional and safe (predefined executables only).
