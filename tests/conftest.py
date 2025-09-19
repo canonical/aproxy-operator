@@ -19,7 +19,6 @@ def pytest_addoption(parser):
     parser.addoption(
         "--model",
         action="store",
-        default=None,
         help="Use an existing Juju model instead of creating a temporary one",
     )
     parser.addoption(
