@@ -21,11 +21,11 @@ It directly invokes nftables to configure firewall and redirection rules. Incorr
 
 - Allow unintended traffic redirection.
 
-#### Best practices for users:
+#### Good practices
 
 - Deploy the charm only on trusted workloads where network interception is expected and approved.
 
-- Ensure only administrators with appropriate permissions can change charm configuration (juju config).
+- Ensure only administrators with appropriate permissions can change charm configuration (`juju config`).
 
 - Regularly audit nftables rules on systems where this charm is deployed.
 
@@ -35,7 +35,7 @@ The charm validates whether the configured upstream proxy (proxy-address) is rea
 
 If a misconfigured or malicious proxy is set, sensitive traffic could be redirected to an unintended endpoint.
 
-#### Best practices for users:
+#### Good practices
 
 - Always configure the charm with a trusted proxy endpoint.
 
@@ -47,7 +47,7 @@ The charm transparently intercepts outbound traffic, which can include sensitive
 
 By design, intercepted traffic is redirected through aproxy, which in turn forwards it to an upstream proxy. This may impact confidentiality if the proxy operator is not trusted.
 
-#### Best practices for users:
+#### Good practices
 
 - Use this charm only in environments where transparent proxying is a compliance or policy requirement.
 
@@ -57,7 +57,7 @@ By design, intercepted traffic is redirected through aproxy, which in turn forwa
 
 On charm removal or stop, nftables rules are flushed. If cleanup fails, stale rules may persist, leaving the system in an insecure or degraded state.
 
-Best practices for users:
+#### Good practices
 
 - Validate nftables rules after stopping or removing the charm.
 
@@ -66,6 +66,6 @@ Best practices for users:
 ## Information security
 Data confidentiality: All outbound HTTP/HTTPS traffic is routed through aproxy to an upstream proxy. This makes the proxy a critical point for inspecting, logging, or potentially leaking sensitive data.
 
-Availability: If the upstream proxy is unavailable, the charm blocks network access by design (traffic redirection fails), which could cause outages for applications depending on outbound connectivity.
+Availability: If the upstream proxy is unavailable, the charm blocks network access by design (meaning the traffic redirection fails), which could cause outages for applications depending on outbound connectivity.
 
 Integrity: nftables rules are automatically managed by the charm. Manual changes to nftables may conflict with charm behavior, leading to inconsistencies in rule enforcement.

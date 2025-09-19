@@ -15,10 +15,10 @@ All charms implicitly provide a `juju-info` endpoint, even though it does not ap
 
 This is why you can integrate aproxy with any principal charm even if you don’t see `juju-info` listed in the principal’s metadata.
 
-Example on wordpress integration command: 
+Example integration command using the WordPress charm: 
 
 ```
-juju deploy wordpress
+juju deploy wordpress-k8s
 juju deploy aproxy --config proxy-address=<target.proxy>
-juju integrate wordpress aproxy
+juju integrate wordpress-k8s aproxy
 ```

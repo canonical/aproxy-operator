@@ -1,4 +1,4 @@
-# Aproxy Operator
+# Aproxy operator
 
 A [Juju](https://juju.is/) [charm](https://documentation.ubuntu.com/juju/3.6/reference/charm/) deploying and managing the [aproxy snap](https://snapcraft.io/install/aproxy/ubuntu) as a subordinate machine charm.
 
@@ -41,7 +41,7 @@ If there's a particular area of documentation that you'd like to see that's miss
 
 ## Project and community
 
-The aproxy Operator is a member of the Ubuntu family. It's an open-source project that warmly welcomes community 
+The aproxy operator is a member of the Ubuntu family. It's an open-source project that warmly welcomes community 
 projects, contributions, suggestions, fixes, and constructive feedback.
 
 - [Code of conduct](https://ubuntu.com/community/code-of-conduct)
@@ -49,12 +49,23 @@ projects, contributions, suggestions, fixes, and constructive feedback.
 - [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 - [Contribute](https://charmhub.io/aproxy/docs/contribute)
 
-Thinking about using the aproxy Operator for your next project? 
+Thinking about using the aproxy operator for your next project? 
 [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
 
 # Contents
 
-1. [Tutorial](link to tutorial)
-1. [How-to](link to how-to)
-1. [Reference](link to reference)
-1. [Explanation](link to explanation)
+1. [How-to]()
+  1. [Integrate with COS](how-to/integrate-with-cos.md)
+  1. [Back up and restore](how-to/back-up-restore.md)
+  1. [Upgrade](how-to/upgrade.md)
+  1. [Contribute](how-to/contribute.md)
+1. [Reference]()
+  1. [Actions](reference/actions.md)
+  1. [Configurations](reference/configurations.md)
+  1. [Integrations](reference/integrations.md)
+  1. [Metrics](reference/metrics.md)
+1. [Explanation]()
+  1. [Charm architecture](explanation/charm-architecture.md)
+  1. [Security](explanation/security.md)
+1. [Release notes]()
+  1. [Overview](release-notes/landing-page.md)

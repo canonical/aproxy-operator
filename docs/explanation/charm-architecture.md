@@ -9,14 +9,14 @@ The charm relies on:
 - Snap service management for the aproxy snap.
 - nftables rules dynamically configured by the charm to enforce transparent proxying.
 
-As a result, if you run a juju status in a model where the aproxy charm is deployed, you’ll see something like:
+As a result, if you run `juju status` in a model where the aproxy charm is deployed, you’ll see something like:
 
 ```bash
 Unit          Workload  Agent  Machine  Public address  Ports  Message
 aproxy/0*     active    idle   0        10.0.0.5               Aproxy interception service started.
 ```
 
-This shows that aproxy runs co-located with the principal charm on the same unit.
+This shows that aproxy runs on the same unit as the principal charm.
 
 ## High-level overview of aproxy deployment
 
@@ -84,13 +84,13 @@ See [metrics](link-to-metrics-document) for more information.
 
 The charm observes the following Juju events:
 
-- install → Installs the aproxy snap.
+- `install`: Installs the aproxy snap.
 
-- start → Configures nftables rules and ensures interception is running.
+- `start`: Configures nftables rules and ensures interception is running.
 
-- config-changed → Reapplies configuration (proxy address, no-proxy list, intercepted ports).
+- `config-changed`: Reapplies configuration (proxy address, no-proxy list, intercepted ports).
 
-- stop → Cleans up nftables rules and removes the snap.
+- `stop`: Cleans up nftables rules and removes the snap.
 
 > See more in the Juju docs: [Hook](https://documentation.ubuntu.com/juju/latest/user/reference/hook/)
 
