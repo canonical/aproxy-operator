@@ -6,9 +6,9 @@
 A subordinate charm that transparently intercepts per-unit HTTP/HTTPS traffic and forwards it to a target proxy. It deployes the [Aproxy](https://github.com/canonical/aproxy) snap application.
 
 Like any Juju charm, this charm supports one-line deployment, configuration, integration, scaling, and more. For Charmed Aproxy, this includes:
-* transparent HTTP/HTTPS interception via nftables REDIRECT
-* per-unit forwarding to a configured target proxy
-* configurable no-proxy domains and intercept ports
+* Transparent HTTP/HTTPS interception via nftables REDIRECT
+* Per-unit forwarding to a configured target proxy
+* Configurable no-proxy domains and intercept ports
 
 For information about how to deploy, integrate, and manage this charm, see the Official [aproxy-operator Documentation](https://charmhub.io/aproxy-operator).
 
