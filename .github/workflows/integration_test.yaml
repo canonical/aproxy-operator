@@ -16,3 +16,9 @@ jobs:
       self-hosted-runner-label: "edge"
       juju-channel: '3/stable'
       provider: 'lxd'
+      
+    services:
+      squid:
+        image: sameersbn/squid:latest
+        ports:
+          - 3128:3128

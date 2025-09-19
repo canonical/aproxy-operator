@@ -14,6 +14,7 @@ def test_aproxy_active(juju, aproxy_app):
     act: wait for units to settle.
     assert: aproxy subordinate reaches active status.
     """
+    juju.cli("config", "aproxy", "proxy-address=127.0.0.1")
     juju.wait(jubilant.all_active, timeout=10 * 60)
     units = juju.status().get_units(aproxy_app.name)
     assert all(u.workload_status.current == "active" for u in units.values())
