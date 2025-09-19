@@ -2,11 +2,6 @@
 
 The aproxy subordinate charm installs and manages the aproxy snap and configures nftables rules to transparently intercept outbound HTTP/HTTPS traffic and forward it through an upstream proxy. Because it manipulates low-level system networking and handles traffic redirection, security considerations are critical.
 
-<!-- Are there upstream security docs that we can point to? If so, include a
-sentence like:
-For details regarding upstream <charm-name> configuration and broader security
-considerations, please refer to the [official <software> documentation](link-to-upstream-docs). -->
-
 ## Risks
 
 ### Privileged operations

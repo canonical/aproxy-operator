@@ -1,7 +1,5 @@
 # How to contribute
 
-<!-- TODO: Update the links to point to the correct repo!! -->
-
 Our documentation is hosted on the [Charmhub forum](https://charmhub.io/aproxy) to enable collaboration.
 Please use the "Help us improve this documentation" links on each documentation page to either
 directly change something you see that's wrong, ask a question, or make a suggestion about a potential

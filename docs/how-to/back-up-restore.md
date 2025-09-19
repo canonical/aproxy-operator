@@ -1,13 +1,5 @@
 # How to back up and restore
 
-<!-- 
-    Remember to update this file for your charm!! 
-    If applicable, use this placeholder to provide information on how to
-    back up and restore the charm. Some questions to answer:
-    * Does this charm have a database that needs to be backed up?
-    * Are there are upstream docs we can link here?
--->
-
 The aproxy subordinate charm does not maintain application data or databases of its own. Since the charm is stateless apart from configuration, there is no persistent data that needs a traditional backup/restore procedure.
 
 ## Back up

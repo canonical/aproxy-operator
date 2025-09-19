@@ -1,4 +1,4 @@
-# aproxy-operator
+# Aproxy subordinate charm
 <!-- Use this space for badges -->
 [![Charmhub](https://charmhub.io/aproxy-operator/badge.svg)](https://charmhub.io/aproxy-operator)
 [![CI](https://github.com/canonical/aproxy-operator/actions/workflows/ci.yaml/badge.svg)](https://github.com/canonical/aproxy-operator/actions)
@@ -19,13 +19,13 @@ Ensure you have a working [Juju](https://documentation.ubuntu.com/juju/latest/tu
 For quick local testing, you can use [Multipass](https://canonical.com/multipass/install).
 
 ### Deploy
-To deploy aproxy-operator alongside a principal charm (for example, WordPress):
+To deploy aproxy alongside a principal charm (for example, WordPress):
 
 ```bash
 juju deploy wordpress
-juju deploy aproxy-operator
-juju add-relation aproxy-operator wordpress
-juju config aproxy-operator proxy-address=$TARGET_PROXY
+juju deploy aproxy
+juju integrate aproxy wordpress
+juju config aproxy proxy-address=$TARGET_PROXY
 ```
 
 ### Basic operations
@@ -58,14 +58,13 @@ See the Charmhub documentation on [integrations](https://charmhub.io/aproxy-oper
 ## Learn more
 * [Read more](https://charmhub.io/aproxy-operator)
 * [Developer documentation](https://charmhub.io/aproxy-operator)
-* [Official webpage](https://charmhub.io/aproxy-operator)
 * [Troubleshooting](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 
 ## Project and community
 * [Issues](https://github.com/canonical/aproxy-operator/issues)
 * [Contributing](https://github.com/canonical/aproxy-operator/blob/main/CONTRIBUTING.md)
 * [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
-* [Launchpad]()
+* [Launchpad](https://launchpad.net/~canonical-is-devops)
 
 ## Licensing and trademark
 This charm is licensed under the [Apache License, Version 2.0](https://github.com/canonical/aproxy-operator?tab=Apache-2.0-1-ov-file). Copyright 2025 Canonical Ltd.

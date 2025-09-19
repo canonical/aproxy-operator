@@ -23,16 +23,22 @@ This shows that aproxy runs on the same unit as the principal charm.
 The following diagram shows a typical deployment of the aproxy subordinate charm:
 
 ```mermaid
-flowchart TD
-    subgraph VM_or_Container["VM or container (principal workload)"]
-        App["Principal Application (e.g., web app)"]
-        Aproxy["Subordinate charm: aproxy"]
-    end
+C4Context
+title System Context diagram for aproxy subordinate charm
 
-    App -- outbound traffic --> Aproxy
-    Aproxy -- forwards --> TargetProxy["External proxy server"]
+Person(dev, "Developer / Operator", "Deploys and manages applications with Juju")
 
-    note["Relations: aproxy is subordinate to the principal charm"]
+System_Ext(proxy, "Upstream Proxy", "Trusted proxy server that receives forwarded HTTP/HTTPS traffic")
+
+System_Boundary(b0, "Host VM or Container") {
+    System(principal, "Principal Application", "e.g., web app, API service, or database")
+    System(aproxy, "aproxy Subordinate Charm", "Intercepts outbound traffic via nftables and forwards to upstream proxy")
+}
+
+Rel(dev, principal, "Deploys and configures via Juju")
+Rel(principal, aproxy, "Outbound traffic co-located and intercepted")
+Rel(aproxy, proxy, "Forwards proxied traffic")
+
 ```
 
 - The principal application generates outbound HTTP/HTTPS traffic.
@@ -46,17 +52,22 @@ flowchart TD
 The following diagram shows the architecture of the aproxy charm:
 
 ```mermaid
-flowchart TD
-    subgraph AproxyCharm["Aproxy Subordinate Charm"]
-        CharmCode["Charm logic (charm.py)"]
-        Snap["aproxy snap"]
-        Nftables["nftables rules"]
-    end
+C4Component
+title Component diagram for aproxy subordinate charm
 
-    CharmCode -- installs/manages --> Snap
-    CharmCode -- applies --> Nftables
-    Nftables -- redirects traffic --> Snap
-    Snap -- forwards traffic --> ExternalProxy["Target proxy server"]
+System_Boundary(b1, "aproxy Subordinate Charm (machine charm)") {
+    Component(charm, "Charm logic", "Python (ops framework)", "Handles Juju events and manages system state")
+    Component(snap, "aproxy snap", "Snap package", "Provides local proxy listener on 127.0.0.1:8443")
+    Component(nft, "nftables rules", "nftables", "Redirects outbound traffic to the aproxy listener")
+}
+
+System_Ext(upstream, "Target Proxy Server", "External proxy configured via charm settings")
+
+Rel(charm, snap, "Installs and configures")
+Rel(charm, nft, "Applies rules")
+Rel(nft, snap, "Intercept TCP connections")
+Rel(snap, upstream, "Forwards traffic to upstream proxy")
+
 ```
 
 - The charm code (`charm.py`) observes Juju lifecycle events and configures both snap and nftables.

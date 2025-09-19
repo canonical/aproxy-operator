@@ -25,8 +25,8 @@ This charm makes operating aproxy simple and straightforward for DevOps or SRE t
 
 | | |
 |--|--|
-|  [Tutorials](link to tutorial)</br>  Get started - a hands-on introduction to using the charm for new users </br> |  [How-to guides](link to how-to guide) </br> Step-by-step guides covering key operations and common tasks |
-| [Reference](link to reference) </br> Technical information - specifications, APIs, architecture | [Explanation](link to explanation) </br> Concepts - discussion and clarification of key topics  |
+|  [Tutorials](https://charmhub.io/aproxy/docs/tutorial)</br>  Get started - a hands-on introduction to using the charm for new users </br> |  [How-to guides](https://charmhub.io/indico/docs/how-to-contribute) </br> Step-by-step guides covering key operations and common tasks |
+| [Reference](https://charmhub.io/aproxy/docs/reference-actions) </br> Technical information - specifications, APIs, architecture | [Explanation](https://charmhub.io/aproxy/docs/explanation-charm-architecture) </br> Concepts - discussion and clarification of key topics  |
 
 ## Contributing to this documentation
 
