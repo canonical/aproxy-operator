@@ -104,7 +104,6 @@ def deploy_charms_fixture(juju: jubilant.Juju, aproxy_charm_file: str):
     juju.deploy("ubuntu", base="ubuntu@22.04")
     juju.deploy(aproxy_charm_file)
     juju.integrate("ubuntu", "aproxy")
-    juju.cli("config", "aproxy", "proxy-address=squid.internal")
     juju.wait(jubilant.all_active, timeout=20 * 60)
 
 

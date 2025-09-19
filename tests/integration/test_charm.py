@@ -19,12 +19,14 @@ def test_aproxy_active(juju, aproxy_app):
     assert all(u.workload_status.current == "active" for u in units.values())
 
 
-def test_proxy_configuration(principal_app):
+def test_proxy_configuration(juju, principal_app):
     """
     arrange: ubuntu with aproxy subordinate.
     act: make an HTTPS request from inside the unit.
     assert: traffic is transparently routed through aproxy.
     """
+    juju.cli("config", "aproxy", "proxy-address=127.0.0.1")
+    juju.wait(jubilant.all_agents_idle, timeout=5 * 60)
     # -s = silent, -o /dev/null = throw away body, -w = only output HTTP code
     result = principal_app.ssh("curl -s -o /dev/null -w '%{http_code}' https://example.com")
     assert result.strip() == "200", f"Expected 200 from example.com, got {result}"
