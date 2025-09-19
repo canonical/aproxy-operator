@@ -14,32 +14,6 @@ import jubilant
 import pytest
 
 
-def pytest_addoption(parser):
-    """Add custom command-line options to pytest.
-
-    Args:
-        parser: The pytest command-line parser.
-    """
-    parser.addoption(
-        "--charm-file",
-        action="store",
-        default=None,
-        help="Path(s) to built charm file(s) to use in tests",
-    )
-    parser.addoption(
-        "--model",
-        action="store",
-        default=None,
-        help="Use an existing Juju model instead of creating a temporary one",
-    )
-    parser.addoption(
-        "--keep-models",
-        action="store",
-        default=False,
-        help="Keep Juju models around after tests instead of destroying them",
-    )
-
-
 @pytest.fixture(name="aproxy_charm_file", scope="session")
 def aproxy_charm_file_fixture(pytestconfig: pytest.Config) -> str:
     """Build or get the aproxy charm file."""
