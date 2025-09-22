@@ -7,7 +7,7 @@ The charm design is subordinate, meaning it attaches to a principal application 
 The charm relies on:
 
 - Snap service management for the aproxy snap.
-- nftables rules dynamically configured by the charm to enforce transparent proxying.
+- nftables rules dynamically configured by the charm to enforce transparent proxy.
 
 As a result, if you run `juju status` in a model where the aproxy charm is deployed, you’ll see something like:
 

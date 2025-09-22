@@ -4,6 +4,8 @@ The aproxy subordinate charm installs and manages the aproxy snap and configures
 
 ## Risks
 
+This section outlines known risks and suggested good practices for users to minimize the associated risk.
+
 ### Privileged operations
 
 The charm uses snap to install and configure the aproxy snap, which requires system-level permissions.
@@ -44,7 +46,7 @@ By design, intercepted traffic is redirected through aproxy, which in turn forwa
 
 #### Good practices
 
-- Use this charm only in environments where transparent proxying is a compliance or policy requirement.
+- Use this charm only in environments where transparent proxy is a compliance or policy requirement.
 
 - Ensure that TLS interception (if enabled upstream) is disclosed, audited, and compliant with local regulations.
 
