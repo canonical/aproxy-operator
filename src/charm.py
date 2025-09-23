@@ -10,6 +10,7 @@ rules, and ensures outbound HTTP/HTTPS traffic is intercepted and forwarded
 through aproxy.
 """
 
+import ipaddress
 import logging
 import socket
 
@@ -166,6 +167,49 @@ class AproxyCharm(ops.CharmBase):
             return "0-65535"
         return ", ".join(port.strip() for port in ports.split(",") if port.strip())
 
+    def _resolve_hostname_to_ips(self, hostname: str) -> list[str]:
+        """Resolve a hostname to its corresponding IP addresses.
+
+        Args:
+            hostname: The hostname to resolve.
+
+        Returns:
+            A list of resolved IP addresses.
+        """
+        try:
+            return list(
+                {
+                    str(info[4][0])
+                    for info in socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
+                }
+            )
+        except socket.gaierror as e:
+            logger.error("Failed to resolve hostname %s: %s", hostname, e)
+            return []
+
+    def _get_no_proxy_ips(self, entries: list[str]) -> list[str]:
+        """Convert no-proxy entries to a list of IP addresses.
+
+        Args:
+            entries: List of no-proxy entries (IP, CIDR, or hostnames).
+
+        Returns:
+            A list of resolved IP addresses.
+        """
+        ip_list = []
+        for entry in map(str.strip, entries):
+            if not entry:
+                continue
+            try:
+                # Check if entry is a valid IP or CIDR
+                ipaddress.ip_network(entry, strict=False)
+                ip_list.append(entry)
+            except ValueError:
+                # Not an IP, attempt to resolve as hostname
+                resolved_ips = self._resolve_hostname_to_ips(entry)
+                ip_list.extend(resolved_ips)
+        return ip_list
+
     def _apply_nftables_rules(self) -> bool:
         """Apply nftables rules for transparent proxy interception.
 
@@ -176,9 +220,12 @@ class AproxyCharm(ops.CharmBase):
         Returns:
             True if rules were successfully applied, False otherwise.
         """
-        no_proxy_list = [ip.strip() for ip in self._no_proxy.split(",") if ip.strip()]
+        no_proxy_list = [
+            address.strip() for address in self._no_proxy.split(",") if address.strip()
+        ]
+        no_proxy_ip_list = self._get_no_proxy_ips(no_proxy_list)
         no_proxy_clause = (
-            f"ip daddr {{ {', '.join(no_proxy_list)} }} return" if no_proxy_list else ""
+            f"ip daddr {{ {', '.join(no_proxy_ip_list)} }} return" if no_proxy_ip_list else ""
         )
         ports_clause = self._format_ports(self._intercept_ports)
 
