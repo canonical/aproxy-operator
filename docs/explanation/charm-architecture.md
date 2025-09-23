@@ -36,8 +36,11 @@ System_Boundary(b0, "Host VM or Container") {
 }
 
 Rel(dev, principal, "Deploys and configures via Juju")
-Rel(principal, aproxy, "Outbound traffic co-located and intercepted")
+Rel(principal, aproxy, "Co-locates and intercepts outbound traffic")
 Rel(aproxy, proxy, "Forwards proxied traffic")
+UpdateRelStyle(dev, principal, $offsetY="-20", $offsetX="5")
+UpdateRelStyle(principal, aproxy, $offsetY="30", $offsetX="-20")
+UpdateRelStyle(aproxy, proxy, $offsetX="10")
 
 ```
 
@@ -54,6 +57,7 @@ The following diagram shows the architecture of the aproxy charm:
 ```mermaid
 C4Component
 title Component diagram for aproxy subordinate charm
+UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="2")
 
 System_Boundary(b1, "aproxy Subordinate Charm (machine charm)") {
     Component(charm, "Charm logic", "Python (ops framework)", "Handles Juju events and manages system state")
@@ -67,6 +71,9 @@ Rel(charm, snap, "Installs and configures")
 Rel(charm, nft, "Applies rules")
 Rel(nft, snap, "Intercept TCP connections")
 Rel(snap, upstream, "Forwards traffic to upstream proxy")
+UpdateRelStyle(charm, snap, $offsetY="-20", $offsetX="-40")
+UpdateRelStyle(charm, nft, $offsetX="10")
+UpdateRelStyle(snap, upstream, $offsetY="-30", $offsetX="10")
 
 ```
 
@@ -131,7 +138,7 @@ For example, when a configuration changes:
 juju config aproxy proxy-address=my-proxy.local
 ```
 
-2. A config-changed event is emitted.
+2. A `config-changed` event is emitted.
 
 3. The charm observes it:
 

@@ -1,4 +1,6 @@
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
 # Aproxy subordinate charm
+<!-- vale Canonical.007-Headings-sentence-case = YES -->
 <!-- Use this space for badges -->
 [![Charmhub](https://charmhub.io/aproxy-operator/badge.svg)](https://charmhub.io/aproxy-operator)
 [![CI](https://github.com/canonical/aproxy-operator/actions/workflows/ci.yaml/badge.svg)](https://github.com/canonical/aproxy-operator/actions)
@@ -10,7 +12,7 @@ Like any Juju charm, this charm supports one-line deployment, configuration, int
 * Per-unit forwarding to a configured target proxy
 * Configurable no-proxy domains and intercept ports
 
-For information about how to deploy, integrate, and manage this charm, see the Official [aproxy-operator Documentation](https://charmhub.io/aproxy-operator).
+For information about how to deploy, integrate, and manage this charm, see the Official [aproxy-operator Documentation](https://charmhub.io/aproxy).
 
 ## Get started
 
@@ -41,7 +43,7 @@ Exclude domains from interception:
 juju config aproxy-operator no-proxy="127.0.0.1"
 ```
 
-Stop interception (disables nftables redirection):
+Stop the aproxy charm's interception of traffic (which disables nftables redirection):
 
 ```bash
 juju run aproxy-operator/0 stop
@@ -53,10 +55,10 @@ See the [charmcraft.yaml](https://github.com/canonical/aproxy-operator/blob/main
 The charm is designed to run as a subordinate and integrates with any principal charm that generates HTTP/HTTPS traffic.
 Relations enable it to transparently forward requests through the configured proxy without modifying the principal charm itself.
 
-See the Charmhub documentation on [integrations](https://charmhub.io/aproxy-operator/integrations) for more details.
+See the Charmhub documentation on [integrations](https://charmhub.io/aproxy/integrations) for more details.
 
 ## Learn more
-* [Read more](https://charmhub.io/aproxy-operator)
+* [Read more](https://charmhub.io/aproxy)
 * [Developer documentation](https://charmhub.io/aproxy-operator)
 * [Troubleshooting](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 
