@@ -20,7 +20,7 @@ Ensure you have a working [Juju](https://documentation.ubuntu.com/juju/latest/tu
 For quick local testing, you can use [Multipass](https://canonical.com/multipass/install).
 
 ### Deploy
-To deploy aproxy alongside a principal charm (for example, WordPress), you need to relate the principal charm with aproxy. For successful proxy, you also need to configure the target proxy address.
+To deploy aproxy alongside a principal charm (for example, WordPress), you need to integrate the principal charm with aproxy. For successful proxy forwarding, you also need to configure the target proxy address.
 
 ```bash
 juju deploy wordpress
