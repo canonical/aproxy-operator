@@ -1,7 +1,6 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 # Aproxy subordinate charm
 <!-- vale Canonical.007-Headings-sentence-case = YES -->
-<!-- Use this space for badges -->
 [![Charmhub](https://charmhub.io/aproxy-operator/badge.svg)](https://charmhub.io/aproxy-operator)
 [![CI](https://github.com/canonical/aproxy-operator/actions/workflows/ci.yaml/badge.svg)](https://github.com/canonical/aproxy-operator/actions)
 
@@ -21,7 +20,7 @@ Ensure you have a working [Juju](https://documentation.ubuntu.com/juju/latest/tu
 For quick local testing, you can use [Multipass](https://canonical.com/multipass/install).
 
 ### Deploy
-To deploy aproxy alongside a principal charm (for example, WordPress):
+To deploy aproxy alongside a principal charm (for example, WordPress), you need to relate the principal charm with aproxy. For successful proxy, you also need to configure the target proxy address.
 
 ```bash
 juju deploy wordpress
@@ -59,7 +58,6 @@ See the Charmhub documentation on [integrations](https://charmhub.io/aproxy/inte
 
 ## Learn more
 * [Read more](https://charmhub.io/aproxy)
-* [Developer documentation](https://charmhub.io/aproxy-operator)
 * [Troubleshooting](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 
 ## Project and community
