@@ -45,7 +45,11 @@ config:
     proxy-address:
       description: Configures the target proxy IP address for traffic forwarding.
       type: string
-    no-proxy:
+    proxy-port:
+      description: Configures the target proxy port for traffic forwarding.
+      default: 3128
+      type: integer
+    exclude-addresses-from-proxy:
       description: Comma-separated list of IP or hostname addresses that should bypass the proxy.
       default: "127.0.0.1"
       type: string
@@ -58,6 +62,6 @@ config:
         - List of comma-separated ports e.g., 80,443
         - Range (both sides included) e.g., 1024-2048
         - List of ranges e.g. 80-90,1024-2048
-        - Keyword "ALL" which corresponds to the range 1-65536
+        - Keyword "ALL" which corresponds to the range 0-65536
       default: "80,443"
       type: string

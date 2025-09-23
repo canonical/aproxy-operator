@@ -8,6 +8,55 @@
 import subprocess  # nosec
 
 import pytest
+from charms.operator_libs_linux.v2 import snap
+
+
+class FakeSnap:
+    """A fake Snap class to simulate snap operations using subprocess."""
+
+    def __init__(self):
+        """Initialize the FakeSnap with not installed state."""
+        self.present = False
+
+    def ensure(self, state, channel=None):
+        """Simulate ensuring the snap is in the desired state.
+
+        Args:
+            state: Desired state (Latest or Absent).
+            channel: Snap channel (not used in this fake).
+        """
+        if state == snap.SnapState.Latest:
+            # call through to subprocess, which your patch fixture will mock
+            subprocess.run(["snap", "install", "aproxy"], check=True)  # nosec
+            self.present = True
+        elif state == snap.SnapState.Absent:
+            subprocess.run(["snap", "remove", "aproxy"], check=True)  # nosec
+            self.present = False
+
+    def set(self, config: dict):
+        """Simulate setting snap configuration using subprocess.
+
+        Args:
+            config: Dictionary of configuration key-value pairs.
+        """
+        args = [f"{k}={v}" for k, v in config.items()]
+        subprocess.run(["snap", "set", "aproxy"] + args, check=True)  # nosec
+
+
+@pytest.fixture(autouse=True)
+def fake_snap(monkeypatch):
+    """Patch SnapCache to provide FakeSnap, which uses subprocess.run."""
+    fake = FakeSnap()
+    monkeypatch.setattr(snap, "SnapCache", lambda: {"aproxy": fake})
+    return fake
+
+
+@pytest.fixture(autouse=True)
+def patch_aproxy_manager(monkeypatch):
+    """Patch AproxyManager methods that touch the real system."""
+    monkeypatch.setattr("aproxy.AproxyManager.write_nft_config", lambda self: None)
+    monkeypatch.setattr("aproxy.AproxyManager.ensure_systemd_unit", lambda self: None)
+    monkeypatch.setattr("aproxy.AproxyManager.remove_systemd_unit", lambda self: None)
 
 
 @pytest.fixture(autouse=True)
@@ -93,7 +142,7 @@ def patch_proxy_check(monkeypatch):
     def _do_patch(is_reachable: bool = True):
         """Patch _is_proxy_reachable to return the specified value."""
         monkeypatch.setattr(
-            "charm.AproxyCharm._is_proxy_reachable",
+            "aproxy.AproxyManager._is_proxy_reachable",
             lambda *a, **k: is_reachable,
         )
 
