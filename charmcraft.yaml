@@ -48,7 +48,7 @@ config:
     proxy-port:
       description: Configures the target proxy port for traffic forwarding.
       default: 3128
-      type: integer
+      type: int
     exclude-addresses-from-proxy:
       description: Comma-separated list of IP or hostname addresses that should bypass the proxy.
       default: "127.0.0.1"
