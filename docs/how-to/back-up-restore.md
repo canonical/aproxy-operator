@@ -14,7 +14,7 @@ To preserve the state of the deployment, back up the following:
    juju config aproxy
    ```
 
-   Save the output, which includes:
+   Save the output, including:
 
    * `proxy-address`
    * `no-proxy`

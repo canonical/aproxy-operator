@@ -1,6 +1,6 @@
 # Security overview
 
-The aproxy subordinate charm installs and manages the aproxy snap and configures nftables rules to transparently intercept outbound HTTP/HTTPS traffic and forward it through an upstream proxy. Because it manipulates low-level system networking and handles traffic redirection, security considerations are critical.
+The aproxy subordinate charm installs and manages the aproxy snap and configures nftables rules to transparently intercept outbound HTTP/HTTPS traffic and forward it through an upstream proxy. Because the charm manipulates low-level system networking and handles traffic redirection, security considerations are critical.
 
 ## Risks
 
@@ -8,7 +8,7 @@ This section outlines known risks and suggested good practices for users to mini
 
 ### Privileged operations
 
-The charm uses snap to install and configure the aproxy snap, which requires system-level permissions.
+The charm uses `snap` to install and configure the aproxy snap, which requires system-level permissions.
 
 It directly invokes nftables to configure firewall and redirection rules. Incorrect or malicious configurations could:
 
@@ -46,13 +46,13 @@ By design, intercepted traffic is redirected through aproxy, which in turn forwa
 
 #### Good practices
 
-- Use this charm only in environments where transparent proxy is a compliance or policy requirement.
+- Use this charm only in environments where a transparent proxy is a compliance or policy requirement.
 
 - Ensure that TLS interception (if enabled upstream) is disclosed, audited, and compliant with local regulations.
 
 ### nftables cleanup
 
-On charm removal or stop, nftables rules are flushed. If cleanup fails, stale rules may persist, leaving the system in an insecure or degraded state.
+On charm removal or stopping, the nftables rules are flushed. If the cleanup fails, stale rules may persist, leaving the system in an insecure or degraded state.
 
 #### Good practices
 

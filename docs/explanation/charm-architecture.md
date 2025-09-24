@@ -77,7 +77,7 @@ UpdateRelStyle(snap, upstream, $offsetY="-30", $offsetX="10")
 
 ```
 
-- The charm code (`charm.py`) observes Juju lifecycle events and configures both snap and nftables.
+- The charm code (`charm.py`) observes Juju lifecycle events and configures both the snap and nftables.
 
 - The aproxy snap provides the actual proxy functionality, listening on `127.0.0.1:8443`.
 
@@ -146,4 +146,4 @@ juju config aproxy proxy-address=my-proxy.local
 self.framework.observe(self.on.config_changed, self._on_config_changed)
 ```
 
-4. `_on_config_changed` validates the config, sets snap options, and reapplies nftables rules.
+4. `_on_config_changed` validates the configuration, sets snap options, and reapplies the nftables rules.
