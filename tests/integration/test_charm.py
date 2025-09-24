@@ -37,20 +37,23 @@ def test_unreachable_proxy_blocks(juju, aproxy_app):
     act: wait for status update.
     assert: aproxy blocks with unreachable proxy message.
     """
-    # Save original config
-    status = juju.status()
-    original_proxy = status.get_app(aproxy_app.name).config.get("proxy-address", "")
+    units = juju.status().get_units(aproxy_app.name)
+    leader_unit = aproxy_app.get_leader_unit()
+
+    # Save original proxy config
+    original_proxy = juju.get_config(aproxy_app.name).get("proxy-address", "")
 
     try:
         # Set to bogus proxy
-        juju.cli("config", "aproxy", "proxy-address=doesnotexist.local")
-        juju.wait_for("aproxy", lambda app: app.workload_status == "blocked")
-        app_status = juju.status().get_app(aproxy_app.name).workload_status_message
-        assert "unreachable" in app_status.lower()
+        juju.config(aproxy_app.name, {"proxy-address": "doesnotexist.local"})
+        juju.wait(lambda status: units[leader_unit].workload_status.current == "blocked")
+
+        status = juju.status().get_units(aproxy_app.name)[leader_unit].workload_status
+        assert status.current == "blocked"
+        assert "unreachable" in status.message.lower()
     finally:
-        # Restore working proxy
         if original_proxy:
-            juju.cli("config", "aproxy", f"proxy-address={original_proxy}")
+            juju.config(aproxy_app.name, {"proxy-address": original_proxy})
             juju.wait(jubilant.all_active, timeout=10 * 60)
 
 

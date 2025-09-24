@@ -4,12 +4,12 @@
 # pylint: disable=unused-argument
 """Fixtures for charm tests."""
 
+import json
 import pathlib
 
 # nosec B404: subprocess usage is intentional and safe (predefined executables only).
 import subprocess  # nosec
 import typing
-import json
 
 import jubilant
 import pytest
@@ -81,7 +81,7 @@ def deploy_charms_fixture(juju: jubilant.Juju, aproxy_charm_file: str, tinyproxy
     juju.deploy(aproxy_charm_file)
     juju.integrate("ubuntu", "aproxy")
     juju.cli("config", "aproxy", f"proxy-address={tinyproxy_url}")
-    juju.cli("config", "aproxy", f"proxy-port=8888")
+    juju.cli("config", "aproxy", "proxy-port=8888")
     juju.wait(jubilant.all_active, timeout=20 * 60)
 
 
@@ -202,8 +202,7 @@ def deploy_tinyproxy(juju: jubilant.Juju) -> str:
     juju.wait(jubilant.all_active, timeout=10 * 60)
 
     # Grab unit IP
-    status = juju.status()
-    unit_ip = status.get_app("tinyproxy").units["tinyproxy/0"].address
+    unit_ip = juju.status().get_units("tinyproxy")["tinyproxy/0"].address
     return f"http://{unit_ip}:8888"
 
 
