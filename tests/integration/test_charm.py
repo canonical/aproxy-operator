@@ -33,15 +33,25 @@ def test_traffic_routed_through_aproxy(juju, principal_app):
 
 def test_unreachable_proxy_blocks(juju, aproxy_app):
     """
-    arrange: configure aproxy with unreachable proxy.
-    act: apply config with bogus proxy address.
-    assert: aproxy subordinate enters blocked state.
+    arrange: aproxy configured with an unreachable proxy.
+    act: wait for status update.
+    assert: aproxy blocks with unreachable proxy message.
     """
-    juju.cli("config", "aproxy", "proxy-address=unreachable.proxy")
-    juju.wait(jubilant.all_agents_idle, timeout=5 * 60)
-    status = juju.status().get_units(aproxy_app.name)
-    unit = list(status.values())[0]
-    assert unit.workload_status.current == "blocked"
+    # Save original config
+    status = juju.status()
+    original_proxy = status.get_app(aproxy_app.name).config.get("proxy-address", "")
+
+    try:
+        # Set to bogus proxy
+        juju.cli("config", "aproxy", "proxy-address=doesnotexist.local")
+        juju.wait_for("aproxy", lambda app: app.workload_status == "blocked")
+        app_status = juju.status().get_app(aproxy_app.name).workload_status_message
+        assert "unreachable" in app_status.lower()
+    finally:
+        # Restore working proxy
+        if original_proxy:
+            juju.cli("config", "aproxy", f"proxy-address={original_proxy}")
+            juju.wait(jubilant.all_active, timeout=10 * 60)
 
 
 def test_cleanup_on_removal(juju, aproxy_app, principal_app):
