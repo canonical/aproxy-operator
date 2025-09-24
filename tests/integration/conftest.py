@@ -139,6 +139,7 @@ def aproxy_app_fixture(juju: jubilant.Juju, deploy_charms) -> App:
     return App(juju=juju, name="aproxy")
 
 
+@pytest.fixture(name="tinyproxy_url", scope="module")
 def deploy_tinyproxy(juju: jubilant.Juju) -> str:
     """Deploy a tinyproxy service into the Juju model using any-charm.
 
@@ -204,8 +205,3 @@ def deploy_tinyproxy(juju: jubilant.Juju) -> str:
     # Grab unit IP
     unit_ip = juju.status().get_units("tinyproxy")["tinyproxy/0"].address
     return f"http://{unit_ip}:8888"
-
-
-@pytest.fixture(scope="module")
-def tinyproxy_url(juju):
-    return deploy_tinyproxy(juju)
