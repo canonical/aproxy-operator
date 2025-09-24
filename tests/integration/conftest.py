@@ -9,6 +9,7 @@ import pathlib
 
 # nosec B404: subprocess usage is intentional and safe (predefined executables only).
 import subprocess  # nosec
+import textwrap
 import typing
 
 import jubilant
@@ -149,7 +150,8 @@ def deploy_tinyproxy(juju: jubilant.Juju) -> str:
     Returns:
         Proxy URL (http://<unit-ip>:8888).
     """
-    any_charm_py = '''
+    any_charm_py = textwrap.dedent(
+        """
     import subprocess
     import textwrap
 
@@ -171,7 +173,7 @@ def deploy_tinyproxy(juju: jubilant.Juju) -> str:
             with open("/etc/tinyproxy/tinyproxy.conf", "w") as f:
                 f.write(
                     textwrap.dedent(
-                        """
+                        \"\"\"
                         User tinyproxy
                         Group tinyproxy
                         Port 8888
@@ -182,14 +184,15 @@ def deploy_tinyproxy(juju: jubilant.Juju) -> str:
                         LogLevel Info
                         PidFile "/run/tinyproxy/tinyproxy.pid"
                         MaxClients 100
-                        """
+                        \"\"\"
                     )
                 )
 
             subprocess.check_call(["systemctl", "restart", "tinyproxy"])
             self.unit.set_ports(8888)
             self.unit.status = ops.ActiveStatus()
-    '''
+    """
+    )
 
     # Deploy any-charm with our custom inline tinyproxy charm
     juju.deploy(

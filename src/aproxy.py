@@ -13,6 +13,7 @@ import ipaddress
 import logging
 import socket
 import subprocess  # nosec: B404
+import textwrap
 from pathlib import Path
 from typing import List, Optional
 
@@ -233,7 +234,7 @@ class AproxyManager:
     def write_nft_config(self) -> None:
         """Write nft config to disk."""
         NFT_CONF_FILE.parent.mkdir(parents=True, exist_ok=True)
-        NFT_CONF_FILE.write_text(self._render_nftables_rules(), encoding="utf-8")
+        NFT_CONF_FILE.write_text(textwrap.dedent(self._render_nftables_rules()), encoding="utf-8")
 
     def apply_nft_config(self) -> None:
         """Apply nft config immediately.
@@ -282,7 +283,7 @@ class AproxyManager:
         [Install]
         WantedBy=multi-user.target
         """
-        SYSTEMD_UNIT_PATH.write_text(content, encoding="utf-8")
+        SYSTEMD_UNIT_PATH.write_text(textwrap.dedent(content), encoding="utf-8")
         systemd.service_enable(SYSTEMD_UNIT_PATH.name)
         systemd.service_start(SYSTEMD_UNIT_PATH.name)
 
