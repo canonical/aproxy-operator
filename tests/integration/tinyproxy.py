@@ -52,6 +52,7 @@ def deploy_tinyproxy(juju: jubilant.Juju) -> str:
                         LogFile "/var/log/tinyproxy/tinyproxy.log"
                         LogLevel Info
                         PidFile "/run/tinyproxy/tinyproxy.pid"
+                        Allow 0.0.0.0/0
                         AllowConnect 443
                         AllowConnect 563
                         MaxClients 100
