@@ -76,5 +76,5 @@ def deploy_tinyproxy(juju: jubilant.Juju) -> str:
     # Grab unit IP
     units = juju.status().get_units("tinyproxy")
     leader = next(name for name, u in units.items() if u.leader)
-    unit_ip = units[leader].public_address
-    return f"http://{unit_ip}"
+    unit_ip = units[leader].address or units[leader].public_address
+    return unit_ip
