@@ -44,7 +44,6 @@ def deploy_tinyproxy(juju: jubilant.Juju) -> str:
                         \"\"\"
                         User tinyproxy
                         Group tinyproxy
-                        Listen 0.0.0.0
                         Port 8888
                         Timeout 600
                         DefaultErrorFile "/usr/share/tinyproxy/default.html"
@@ -52,9 +51,6 @@ def deploy_tinyproxy(juju: jubilant.Juju) -> str:
                         LogFile "/var/log/tinyproxy/tinyproxy.log"
                         LogLevel Info
                         PidFile "/run/tinyproxy/tinyproxy.pid"
-                        Allow 0.0.0.0/0
-                        AllowConnect 443
-                        AllowConnect 563
                         MaxClients 100
                         \"\"\"
                     )
