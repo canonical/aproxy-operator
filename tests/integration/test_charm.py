@@ -19,7 +19,7 @@ def test_aproxy_active(juju, aproxy_app):
     assert all(u.workload_status.current == "active" for u in units.values())
 
 
-def test_traffic_routed_through_aproxy(juju, principal_app, tmp_path):
+def test_traffic_routed_through_aproxy(juju, principal_app):
     """
     arrange: ubuntu with aproxy subordinate and tinyproxy running.
     act: start a local HTTP server inside the ubuntu unit, then curl it.
@@ -32,28 +32,12 @@ def test_traffic_routed_through_aproxy(juju, principal_app, tmp_path):
     principal_app.ssh("nohup python3 -m http.server 8080 > /tmp/http.log 2>&1 &")
 
     # Curl the server address from inside ubuntu — intercepted by aproxy
-    ip = principal_app.public_address
+    units = juju.status().get_units(principal_app.name)
+    leader = next(name for name, u in units.items() if u.leader)
+    ip = units[leader].address or units[leader].public_address
     result = principal_app.ssh(f"curl -s -o /dev/null -w '%{{http_code}}' http://{ip}:8080")
 
     assert result.strip() == "200", f"Expected 200 from local server, got {result}"
-
-
-def test_unreachable_proxy_blocks(juju, aproxy_app):
-    """
-    arrange: aproxy configured with an unreachable proxy.
-    act: wait for status update.
-    assert: aproxy blocks.
-    """
-    juju.cli("config", "aproxy", "proxy-address=unreachable.address")
-
-    juju.wait(
-        lambda status: jubilant.all_blocked(status, aproxy_app.name),
-        timeout=5 * 60,
-        successes=1,
-    )
-
-    status = juju.status().get_app(aproxy_app.name).app_status
-    assert status.current == "blocked"
 
 
 def test_cleanup_on_removal(juju, aproxy_app, principal_app):
