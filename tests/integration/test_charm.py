@@ -29,7 +29,8 @@ def test_unreachable_proxy_blocks(juju, aproxy_app):
 
     # Wait until the charm reports blocked
     juju.wait_for(
-        lambda: juju.status().get_app("aproxy").app_status.current == "blocked", timeout=5 * 60
+        lambda: juju.status().get_app(aproxy_app.name).app_status.current == "blocked",
+        timeout=5 * 60,
     )
 
     units = juju.status().get_units(aproxy_app.name)
