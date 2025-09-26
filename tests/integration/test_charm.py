@@ -19,6 +19,25 @@ def test_aproxy_active(juju, aproxy_app):
     assert all(u.workload_status.current == "active" for u in units.values())
 
 
+def test_traffic_routed_through_aproxy(juju, principal_app, tmp_path):
+    """
+    arrange: ubuntu with aproxy subordinate and tinyproxy running.
+    act: start a local HTTP server inside the ubuntu unit, then curl it.
+    assert: request succeeds via aproxy interception.
+    """
+    juju.wait(jubilant.all_active, timeout=5 * 60)
+
+    # Start a simple HTTP server on port 8080 inside ubuntu
+    # (runs in the background so we can curl it)
+    principal_app.ssh("nohup python3 -m http.server 8080 > /tmp/http.log 2>&1 &")
+
+    # Curl the server address from inside ubuntu — intercepted by aproxy
+    ip = principal_app.public_address
+    result = principal_app.ssh(f"curl -s -o /dev/null -w '%{{http_code}}' http://{ip}:8080")
+
+    assert result.strip() == "200", f"Expected 200 from local server, got {result}"
+
+
 def test_unreachable_proxy_blocks(juju, aproxy_app):
     """
     arrange: aproxy configured with an unreachable proxy.
@@ -27,14 +46,13 @@ def test_unreachable_proxy_blocks(juju, aproxy_app):
     """
     juju.cli("config", "aproxy", "proxy-address=unreachable.address")
 
-    # Wait until the charm reports blocked
-    juju.wait_for(
-        lambda: juju.status().get_app(aproxy_app.name).app_status.current == "blocked",
+    juju.wait(
+        lambda status: jubilant.all_blocked(status, aproxy_app.name),
         timeout=5 * 60,
+        successes=1,
     )
 
-    units = juju.status().get_units(aproxy_app.name)
-    status = units[aproxy_app.get_leader_unit()].workload_status
+    status = juju.status().get_app(aproxy_app.name).app_status
     assert status.current == "blocked"
 
 
