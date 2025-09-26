@@ -26,9 +26,14 @@ def test_unreachable_proxy_blocks(juju, aproxy_app):
     assert: aproxy blocks.
     """
     juju.cli("config", "aproxy", "proxy-address=unreachable.address")
+
+    # Wait until the charm reports blocked
+    juju.wait_for(
+        lambda: juju.status().get_app("aproxy").app_status.current == "blocked", timeout=5 * 60
+    )
+
     units = juju.status().get_units(aproxy_app.name)
-    leader_unit = next(name for name, u in units.items() if u.leader)
-    status = units[leader_unit].workload_status
+    status = units[aproxy_app.get_leader_unit()].workload_status
     assert status.current == "blocked"
 
 
