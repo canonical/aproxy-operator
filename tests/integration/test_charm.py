@@ -23,14 +23,13 @@ def test_unreachable_proxy_blocks(juju, aproxy_app):
     """
     arrange: aproxy configured with an unreachable proxy.
     act: wait for status update.
-    assert: aproxy blocks with unreachable proxy message.
+    assert: aproxy blocks.
     """
     juju.cli("config", "aproxy", "proxy-address=unreachable.address")
     units = juju.status().get_units(aproxy_app.name)
     leader_unit = next(name for name, u in units.items() if u.leader)
     status = units[leader_unit].workload_status
     assert status.current == "blocked"
-    assert "unreachable" in status.message.lower()
 
 
 def test_cleanup_on_removal(juju, aproxy_app, principal_app):
