@@ -9,6 +9,9 @@ import subprocess  # nosec
 
 import pytest
 from charms.operator_libs_linux.v2 import snap
+from errors import NftApplyError, NftCleanupError
+
+from aproxy import NFT_CONF_FILE
 
 
 class FakeSnap:
@@ -26,7 +29,7 @@ class FakeSnap:
             channel: Snap channel (not used in this fake).
         """
         if state == snap.SnapState.Latest:
-            # call through to subprocess, which your patch fixture will mock
+            # call through to subprocess, which patch fixture will mock
             subprocess.run(["snap", "install", "aproxy"], check=True)  # nosec
             self.present = True
         elif state == snap.SnapState.Absent:
@@ -54,9 +57,36 @@ def fake_snap(monkeypatch):
 @pytest.fixture(autouse=True)
 def patch_aproxy_manager(monkeypatch):
     """Patch AproxyManager methods that touch the real system."""
-    monkeypatch.setattr("aproxy.AproxyManager.write_nft_config", lambda self: None)
-    monkeypatch.setattr("aproxy.AproxyManager.ensure_systemd_unit", lambda self: None)
+    monkeypatch.setattr("aproxy.AproxyManager.check_relation_availability", lambda self: None)
+    monkeypatch.setattr("aproxy.AproxyManager._get_primary_ip", lambda self: "127.0.0.1")
+    monkeypatch.setattr("aproxy.AproxyManager.apply_nft_config", lambda self: None)
+    monkeypatch.setattr("aproxy.AproxyManager.persist_nft_config", lambda self: None)
     monkeypatch.setattr("aproxy.AproxyManager.remove_systemd_unit", lambda self: None)
+
+
+@pytest.fixture
+def patch_aproxy_nft_failure(monkeypatch):
+    def _do_patch(is_apply_failure: bool = False, is_cleanup_failure: bool = False):
+        if is_apply_failure:
+            monkeypatch.setattr(
+                "aproxy.AproxyManager.apply_nft_config",
+                lambda self: (
+                    (_ for _ in ()).throw(
+                        NftApplyError(Exception("Simulated nft failure"), NFT_CONF_FILE)
+                    )
+                ),
+            )
+        if is_cleanup_failure:
+            monkeypatch.setattr(
+                "aproxy.AproxyManager.remove_nft_config",
+                lambda self: (
+                    (_ for _ in ()).throw(
+                        NftCleanupError(Exception("Simulated nft cleanup failure"), NFT_CONF_FILE)
+                    )
+                ),
+            )
+
+    return _do_patch
 
 
 @pytest.fixture(autouse=True)

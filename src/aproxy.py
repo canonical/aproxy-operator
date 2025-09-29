@@ -11,15 +11,25 @@ Contains:
 
 import ipaddress
 import logging
+import re
 import socket
 import subprocess  # nosec: B404
 import textwrap
 from pathlib import Path
 from typing import List, Optional
 
+import ops
+
 from charms.operator_libs_linux.v1 import systemd
 from charms.operator_libs_linux.v2 import snap
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+
+from errors import (
+    InvalidCharmConfigError,
+    NftApplyError,
+    NftCleanupError,
+    TopologyUnavailableError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +39,19 @@ NFT_CONF_FILE = NFT_CONF_DIR / "nftables.conf"
 SYSTEMD_UNIT_PATH = Path("/etc/systemd/system/aproxy-nftables.service")
 APROXY_LISTEN_PORT = 8443
 APROXY_SNAP_NAME = "aproxy"
+APROXY_SNAP_CHANNEL = "edge"
 DEFAULT_PROXY_PORT = 3128
+RELATION_NAME = "juju-info"
+
+# ^\.?             : one leading dot allowed
+# (?!-)            : no leading dash
+# (?!.*--)         : no consecutive dashes
+# (?!.*-$)         : no trailing dash
+# ([a-zA-Z0-9-]{1,63}\.)*  : 1–63 chars per label, with dots allowed as separators
+# ([a-zA-Z0-9-]{1,63})\.?$   : last label (with one dot allowed at the end)
+HOSTNAME_PATTERN = re.compile(
+    r"^\.?(?!-)(?!.*--)(?!.*-$)([a-zA-Z0-9-]{1,63}\.)*([a-zA-Z0-9-]{1,63})\.?$"
+)
 
 
 class AproxyConfig(BaseModel):
@@ -41,63 +63,161 @@ class AproxyConfig(BaseModel):
         proxy_port: The target proxy port (default is 3128).
         no_proxy: Comma-separated list of IPs, CIDRs, or hostnames to
             exclude from interception.
-        intercept_ports: Comma-separated list of ports to intercept,
-            or "ALL" to intercept all ports (default is "80,443").
         intercept_ports_list: List of ports to intercept as strings.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    proxy_address: Optional[str] = None
+    proxy_address: str
     proxy_port: int = DEFAULT_PROXY_PORT
-    no_proxy: str = ""
-    intercept_ports: str = "80,443"
+    no_proxy: List[str] = []
+    intercept_ports_list: List[str]
 
-    @property
-    def intercept_ports_list(self) -> List[str]:
-        """Get intercept ports as a list of strings."""
-        ports = [port.strip() for port in self.intercept_ports.split(",") if port.strip()]
+    @classmethod
+    def from_charm(cls, charm: ops.CharmBase) -> "AproxyConfig":
+        conf = charm.model.config
+
+        # Parse proxy-address and proxy port
+        proxy_conf = conf.get("proxy-address", "").strip()
+        proxy_address, proxy_port = proxy_conf, DEFAULT_PROXY_PORT
+        if ":" in proxy_conf:
+            host, port_str = proxy_conf.split(":", 1)
+            proxy_address = host.strip()
+            try:
+                proxy_port = int(port_str)
+            except ValueError:
+                raise InvalidCharmConfigError(
+                    f"proxy port must be between 1 and 65535 instead of {port_str}"
+                )
+
+        # Parse no proxy list
+        no_proxy = []
+        raw_no_proxy = conf.get("exclude-addresses-from-proxy", "")
+        if raw_no_proxy:
+            no_proxy = [entry.strip() for entry in raw_no_proxy.split(",") if entry.strip()]
+
+        # Parse intercept ports (string -> list)
+        intercept_ports_raw = conf.get("intercept-ports", "")
+        intercept_ports_list = intercept_ports_raw.split(",") if intercept_ports_raw else []
+
+        # Build the AproxyConfig instance, validating fields
+        try:
+            return cls(
+                proxy_address=proxy_address,
+                proxy_port=proxy_port,
+                no_proxy=no_proxy,
+                intercept_ports_list=intercept_ports_list,
+            )
+        except ValidationError as exc:
+            # Collect which fields failed validation
+            error_field_str = ",".join(err["loc"][0] for err in exc.errors())
+            raise InvalidCharmConfigError(f"invalid configuration: {error_field_str}") from exc
+
+    # ---------------- Validators ----------------
+
+    @field_validator("proxy_address")
+    def _validate_proxy_address(cls, proxy_address: str) -> str:
+        """Validate that proxy_address is a non-empty string."""
+        if not proxy_address or not isinstance(proxy_address, str) or not proxy_address.strip():
+            raise ValueError("target proxy address is required to be non-empty string")
+        return proxy_address.strip()
+
+    @field_validator("proxy_port")
+    def _validate_proxy_port(cls, proxy_port: int) -> int:
+        """Validate that proxy_port is a valid port number."""
+        if not (0 < proxy_port < 65536):
+            raise ValueError(f"proxy port must be between 1 and 65535 instead of {proxy_port}")
+        return proxy_port
+
+    @field_validator("no_proxy")
+    def _validate_no_proxy(cls, no_proxy: List[str]) -> List[str]:
+        """Validate no_proxy entries are valid IPs, CIDRs, or hostnames."""
+        valid_no_proxy = []
+        for entry in no_proxy:
+            entry = entry.strip()
+            if not entry:
+                continue
+            try:
+                # Check if it's a valid IP or CIDR
+                ipaddress.ip_network(entry, strict=False)
+                valid_no_proxy.append(entry)
+            except ValueError:
+                # If not an IP/CIDR, check if it's a valid hostname
+                if HOSTNAME_PATTERN.match(entry):
+                    valid_no_proxy.append(entry)
+                else:
+                    raise ValueError(f"Invalid no_proxy entry {entry}")
+        return valid_no_proxy
+
+    @field_validator("intercept_ports_list")
+    def _validate_and_merge_ports(cls, ports: List[str]) -> List[str]:
+        """Validate and merge intercept_ports into a list of port ranges as strings."""
+        if not ports:
+            return []
+
+        ports = [p.strip() for p in ports if p.strip()]
         if len(ports) == 1 and ports[0].upper() == "ALL":
-            return ["0-65535"]
-        return ports
+            return ["1-65535"]
+
+        # Convert all port values to list of tuples representing port ranges
+        ranges = []
+        for item in ports:
+            if "-" in item:
+                try:
+                    start, end = map(int, item.split("-", 1))
+                except ValueError:
+                    raise ValueError(f"Invalid port range: {item}")
+                if not (1 <= start <= end <= 65535):
+                    raise ValueError(f"Port range must be between 1 and 65535 instead of {item}")
+                ranges.append((start, end))
+            else:
+                try:
+                    port = int(item)
+                except ValueError:
+                    raise ValueError(f"Port value must be of type integer instead of {item}")
+                if not (1 <= port <= 65535):
+                    raise ValueError(f"Port must be between 1 and 65535 instead of {item}")
+                ranges.append((port, port))
+
+        # Merge overlapping ranges
+        ranges.sort()
+        merged_port = []
+        for start, end in ranges:
+            if not merged_port or merged_port[-1][1] < start - 1:
+                merged_port.append([start, end])
+            else:
+                merged_port[-1][1] = max(merged_port[-1][1], end)
+
+        return [f"{start}-{end}" if start != end else str(start) for start, end in merged_port]
 
 
 class AproxyManager:
     """Manages aproxy snap and nftables persistence."""
 
-    def __init__(self, config: AproxyConfig):
+    def __init__(self, config: AproxyConfig, charm: ops.CharmBase):
         """Construct.
 
         Args:
             config: AproxyConfig instance with current configuration.
         """
         self.config = config
+        self.charm = charm
 
     # ---------------- Snap ----------------
 
-    @staticmethod
-    def install() -> None:
+    def install(self) -> None:
         """Install aproxy snap using snap helper."""
         logger.info("Installing %s snap", APROXY_SNAP_NAME)
         snap_cache = snap.SnapCache()
-        snap_cache[APROXY_SNAP_NAME].ensure(state=snap.SnapState.Latest, channel="edge")
+        snap_cache[APROXY_SNAP_NAME].ensure(
+            state=snap.SnapState.Latest, channel=APROXY_SNAP_CHANNEL
+        )
 
-    @staticmethod
-    def uninstall() -> None:
+    def uninstall(self) -> None:
         """Remove aproxy snap using snap helper."""
         logger.info("Removing %s snap", APROXY_SNAP_NAME)
         snap_cache = snap.SnapCache()
         snap_cache[APROXY_SNAP_NAME].ensure(state=snap.SnapState.Absent)
-
-    @staticmethod
-    def is_snap_installed() -> bool:
-        """Check if aproxy snap is installed.
-
-        Returns:
-            True if installed, False otherwise.
-        """
-        snap_cache = snap.SnapCache()
-        return snap_cache[APROXY_SNAP_NAME].present
 
     def configure_target_proxy(self) -> None:
         """Configure aproxy snap with current config.
@@ -106,8 +226,6 @@ class AproxyManager:
             ValueError: If proxy_address is not set in config.
             ConnectionError: If the target proxy is not reachable.
         """
-        if not self.config.proxy_address:
-            raise ValueError("target proxy address is required to configured snap")
 
         target_proxy = f"{self.config.proxy_address}:{self.config.proxy_port}"
         if not self._is_proxy_reachable(self.config.proxy_address, self.config.proxy_port):
@@ -128,63 +246,54 @@ class AproxyManager:
         try:
             with socket.create_connection((host, port), timeout=5):
                 return True
-        except (socket.timeout, ConnectionRefusedError, OSError) as e:
+        except (socket.timeout, ConnectionRefusedError) as e:
             logger.error("Proxy %s:%s is not reachable: %s", host, port, e)
             return False
 
     # ---------------- nftables ----------------
 
     def _get_primary_ip(self) -> str:
-        """Detect machine's primary IP for DNAT target."""
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-                s.connect(("8.8.8.8", 80))
-                return s.getsockname()[0]
-        except (socket.timeout, ConnectionRefusedError, OSError) as e:
-            logger.warning("Falling back to 127.0.0.1 for DNAT target: %s", e)
-            return "127.0.0.1"
-
-    def _resolve_hostname_to_ips(self, hostname: str) -> list[str]:
-        """Resolve a hostname to its corresponding IP addresses.
+        """Get this unit's primary IP using Juju binding.
 
         Args:
-            hostname: The hostname to resolve.
+            charm: The charm instance, used to access model bindings.
 
         Returns:
-            A list of resolved IP addresses.
-        """
-        try:
-            return list(
-                {
-                    str(info[4][0])
-                    for info in socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
-                }
+            The unit's bound private IP address.
+
+        Raises:
+            TopologyUnavailableError: If the binding or network information is unavailable.
+        """  # or whatever relation your subordinate uses
+        relation = self.charm.model.get_relation(RELATION_NAME)
+        binding = self.charm.model.get_binding(relation)
+
+        if not relation or not binding:
+            raise TopologyUnavailableError(
+                f"Relation '{RELATION_NAME}' binding not available when trying to get topology."
             )
-        except socket.gaierror as e:
-            logger.error("Failed to resolve hostname %s: %s", hostname, e)
-            return []
 
-    def _get_no_proxy_ips(self) -> list[str]:
-        """Convert no-proxy entries to a list of IP addresses.
+        if binding.network is None:
+            raise TopologyUnavailableError(
+                f"Relation '{RELATION_NAME}' network not available when trying to get unit IP."
+            )
 
-        Returns:
-            A list of resolved IP addresses.
-        """
-        ip_list: list[str] = []
-        for entry in map(str.strip, self.config.no_proxy.split(",")):
-            if not entry:
-                continue
-            try:
-                # Check if entry is a valid IP or CIDR
-                ipaddress.ip_network(entry, strict=False)
-                ip_list.append(entry)
-            except ValueError:
-                # Not an IP, attempt to resolve as hostname
-                resolved_ips = self._resolve_hostname_to_ips(entry)
-                ip_list.extend(resolved_ips)
-        return ip_list
+        units_ip: list[str] = [
+            unit_data.get("private-address", "")
+            for _, unit_data in relation.data.items()
+            if unit_data.get("private-address", "")
+        ]
 
-    def _render_nftables_rules(self) -> str:
+        current_unit_ip = str(binding.network.bind_address)
+
+        logger.debug(
+            "Resolved unit IP %s via relation '%s' (all peer IPs: %s)",
+            current_unit_ip,
+            RELATION_NAME,
+            units_ip,
+        )
+        return current_unit_ip
+
+    def _render_nft_rules(self) -> str:
         """Render nftables rules for transparent proxy interception.
 
         - Redirect outbound traffic on configured intercept_ports to aproxy.
@@ -196,9 +305,12 @@ class AproxyManager:
         """
         server_ip = self._get_primary_ip()
         ports_clause = ", ".join(self.config.intercept_ports_list)
-        excluded_ips = [
-            "127.0.0.0/8",
-        ] + self._get_no_proxy_ips()
+        excluded_ips = ", ".join(
+            [
+                "127.0.0.0/8",  # private loopback range
+            ]
+            + self.config.no_proxy
+        )
 
         return f"""#!/usr/sbin/nft -f
         table ip aproxy
@@ -207,7 +319,7 @@ class AproxyManager:
             set excluded_nets {{
                     type ipv4_addr;
                     flags interval; auto-merge;
-                    elements = {{ {', '.join(excluded_ips)} }}
+                    elements = {{ {excluded_ips} }}
                 }}
             chain prerouting {{
                 type nat hook prerouting priority dstnat; policy accept;
@@ -228,10 +340,16 @@ class AproxyManager:
         }}
         """
 
-    def write_nft_config(self) -> None:
-        """Write nft config to disk."""
-        NFT_CONF_FILE.parent.mkdir(parents=True, exist_ok=True)
-        NFT_CONF_FILE.write_text(textwrap.dedent(self._render_nftables_rules()), encoding="utf-8")
+    def check_relation_availability(self) -> None:
+        """Check if the Juju relation is available for topology resolution.
+
+        Args:
+            charm: The charm instance, used to access model bindings.
+        """
+        try:
+            self._get_primary_ip()
+        except TopologyUnavailableError as e:
+            raise TopologyUnavailableError(f"Failed to get unit IP: {e}") from e
 
     def apply_nft_config(self) -> None:
         """Apply nft config immediately.
@@ -239,13 +357,17 @@ class AproxyManager:
         Raises:
             CalledProcessError: If the nft command fails.
         """
+        # Write nft config to disk
+        NFT_CONF_FILE.parent.mkdir(parents=True, exist_ok=True)
+        NFT_CONF_FILE.write_text(textwrap.dedent(self._render_nft_rules()), encoding="utf-8")
+
         try:
             # nosec B404,B603,B607: calling trusted system binary with predefined args
             subprocess.run(["nft", "-f", str(NFT_CONF_FILE)], check=True)  # nosec
             logger.info("Applied nftables rules successfully.")
         except subprocess.CalledProcessError as e:
             logger.error("Failed to apply nftables rules: %s", e)
-            raise
+            raise NftApplyError(e, str(NFT_CONF_FILE)) from e
 
     def remove_nft_config(self) -> None:
         """Remove nft table.
@@ -260,12 +382,12 @@ class AproxyManager:
             logger.info("Cleaned up nftables rules.")
         except subprocess.CalledProcessError as e:
             logger.error("Failed to clean up nftables rules: %s", e)
-            raise
+            raise NftCleanupError(e, str(NFT_CONF_FILE)) from e
 
     # ---------------- systemd ----------------
 
-    def ensure_systemd_unit(self) -> None:
-        """Ensure nftables persistence via systemd."""
+    def persist_nft_config(self) -> None:
+        """Ensure nftables config persistence via systemd since the nftables rules will be removed on server reboot."""
         content = f"""
         [Unit]
         Description=Aproxy nftables rules

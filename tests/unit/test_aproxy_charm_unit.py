@@ -11,10 +11,11 @@ import pytest
 from ops import testing
 from scenario.errors import UncaughtCharmError
 
+from aproxy import NFT_CONF_FILE
 from charm import AproxyCharm
 
 
-def test_install_with_proxy_config_should_succeed():
+def test_install_with_proxy_config_should_succeed(patch_proxy_check):
     """
     arrange: declare a context and input state with proxy config.
     act: run the install event.
@@ -22,13 +23,16 @@ def test_install_with_proxy_config_should_succeed():
     """
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={"proxy-address": "target.proxy"})
+    patch_proxy_check(is_reachable=True)
 
     out = ctx.run(ctx.on.install(), state)
 
-    assert out.unit_status == testing.ActiveStatus("Aproxy snap successfully installed.")
+    assert out.unit_status == testing.ActiveStatus(
+        "Aproxy interception service started and configured on target proxy address: target.proxy:3128"
+    )
 
 
-def test_install_without_proxy_config_should_succeed():
+def test_install_without_proxy_config_should_fail(patch_proxy_check):
     """
     arrange: declare a context and input state without proxy config.
     act: run the install event.
@@ -36,10 +40,13 @@ def test_install_without_proxy_config_should_succeed():
     """
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={})
+    patch_proxy_check(is_reachable=True)
 
     out = ctx.run(ctx.on.install(), state)
 
-    assert out.unit_status == testing.ActiveStatus("Aproxy snap successfully installed.")
+    assert out.unit_status == testing.BlockedStatus(
+        "Invalid charm configuration: invalid configuration: proxy_address"
+    )
 
 
 def test_install_with_snap_install_failure_should_fail(patch_subprocess_failure):
@@ -71,11 +78,11 @@ def test_start_proxy_reachable_should_succeed(patch_proxy_check):
     out = ctx.run(ctx.on.start(), state)
 
     assert out.unit_status == testing.ActiveStatus(
-        "Aproxy interception service started and configured."
+        "Aproxy interception service started and configured on target proxy address: target.proxy:3128"
     )
 
 
-def test_start_proxy_unreachable_should_fail(patch_proxy_check, caplog):
+def test_start_proxy_unreachable_should_fail(patch_proxy_check):
     """
     arrange: declare a context, input state with proxy config, and simulate unreachable proxy.
     act: run the start event.
@@ -84,12 +91,12 @@ def test_start_proxy_unreachable_should_fail(patch_proxy_check, caplog):
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={"proxy-address": "target.proxy"})
     patch_proxy_check(is_reachable=False)
-    caplog.set_level("ERROR")
 
     out = ctx.run(ctx.on.start(), state)
 
-    assert out.unit_status == testing.BlockedStatus("Failed to install or configure aproxy.")
-    assert "Proxy is not reachable at target.proxy" in caplog.text
+    assert out.unit_status == testing.BlockedStatus(
+        "Failed to configure aproxy: Proxy is not reachable at target.proxy:3128"
+    )
 
 
 def test_start_proxy_snap_config_failure_should_fail(patch_proxy_check, patch_subprocess_failure):
@@ -103,12 +110,13 @@ def test_start_proxy_snap_config_failure_should_fail(patch_proxy_check, patch_su
     patch_proxy_check(is_reachable=True)
     patch_subprocess_failure(is_set_failure=True)
 
-    out = ctx.run(ctx.on.start(), state)
+    with pytest.raises(UncaughtCharmError) as excinfo:
+        out = ctx.run(ctx.on.start(), state)
 
-    assert out.unit_status == testing.BlockedStatus("Failed to install or configure aproxy.")
+    assert isinstance(excinfo.value.__cause__, subprocess.CalledProcessError)
 
 
-def test_start_nftables_failure_should_fail(patch_proxy_check, patch_subprocess_failure, caplog):
+def test_start_nftables_failure_should_fail(patch_proxy_check, patch_aproxy_nft_failure):
     """
     arrange: declare a context, input state with proxy config, and simulate nftables failure.
     act: run the start event.
@@ -117,13 +125,13 @@ def test_start_nftables_failure_should_fail(patch_proxy_check, patch_subprocess_
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={"proxy-address": "target.proxy"})
     patch_proxy_check(is_reachable=True)
-    patch_subprocess_failure(is_nft_failure=True)
-    caplog.set_level("ERROR")
+    patch_aproxy_nft_failure(is_apply_failure=True)
 
     out = ctx.run(ctx.on.start(), state)
 
-    assert out.unit_status == testing.BlockedStatus("Failed to install or configure aproxy.")
-    assert "Failed to apply nftables rules" in caplog.text
+    assert out.unit_status == testing.BlockedStatus(
+        f"Failed to apply nftables rules from {NFT_CONF_FILE}"
+    )
 
 
 def test_config_changed_should_succeed(patch_proxy_check):
@@ -139,7 +147,7 @@ def test_config_changed_should_succeed(patch_proxy_check):
     out = ctx.run(ctx.on.config_changed(), state)
 
     assert out.unit_status == testing.ActiveStatus(
-        "Aproxy interception service started and configured."
+        "Aproxy interception service started and configured on target proxy address: modified.proxy:3128"
     )
 
 
@@ -154,10 +162,12 @@ def test_config_changed_without_proxy_config_should_fail():
 
     out = ctx.run(ctx.on.config_changed(), state)
 
-    assert out.unit_status == testing.BlockedStatus("Missing target proxy address in config.")
+    assert out.unit_status == testing.BlockedStatus(
+        "Invalid charm configuration: invalid configuration: proxy_address"
+    )
 
 
-def test_config_changed_with_unreachable_proxy_should_fail(patch_proxy_check, caplog):
+def test_config_changed_with_unreachable_proxy_should_fail(patch_proxy_check):
     """
     arrange: declare a context, input state with modified config, and simulate unreachable proxy.
     act: run the config_changed event.
@@ -166,12 +176,12 @@ def test_config_changed_with_unreachable_proxy_should_fail(patch_proxy_check, ca
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={"proxy-address": "modified.proxy"})
     patch_proxy_check(is_reachable=False)
-    caplog.set_level("ERROR")
 
     out = ctx.run(ctx.on.config_changed(), state)
 
-    assert out.unit_status == testing.BlockedStatus("Failed to install or configure aproxy.")
-    assert "Proxy is not reachable at modified.proxy" in caplog.text
+    assert out.unit_status == testing.BlockedStatus(
+        "Failed to configure aproxy: Proxy is not reachable at modified.proxy:3128"
+    )
 
 
 def test_stop_should_succeed():
@@ -181,28 +191,26 @@ def test_stop_should_succeed():
     assert: status is active with a message indicating the interception service stopped.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State()
+    state = testing.State(config={"proxy-address": "target.proxy"})
 
     out = ctx.run(ctx.on.stop(), state)
 
     assert out.unit_status == testing.ActiveStatus("Aproxy interception service stopped.")
 
 
-def test_stop_with_nftables_cleanup_failure_should_succeed(patch_subprocess_failure, caplog):
+def test_stop_with_nftables_cleanup_failure_should_succeed(patch_aproxy_nft_failure):
     """
     arrange: declare a context, input state, and simulate nftables cleanup failure.
     act: run the stop event.
     assert: status is active with a log message indicating nftables cleanup failure.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State()
-    patch_subprocess_failure(is_nft_failure=True)
-    caplog.set_level("ERROR")
+    state = testing.State(config={"proxy-address": "target.proxy"})
+    patch_aproxy_nft_failure(is_cleanup_failure=True)
 
     out = ctx.run(ctx.on.stop(), state)
 
     assert out.unit_status == testing.ActiveStatus("Aproxy interception service stopped.")
-    assert "Failed to clean up nftables rules" in caplog.text
 
 
 def test_stop_with_snap_removal_failure_should_succeed(patch_subprocess_failure, caplog):
@@ -212,7 +220,7 @@ def test_stop_with_snap_removal_failure_should_succeed(patch_subprocess_failure,
     assert: status is active with a log message indicating snap removal failure.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State()
+    state = testing.State(config={"proxy-address": "target.proxy"})
     patch_subprocess_failure(is_remove_failure=True)
     caplog.set_level("ERROR")
 

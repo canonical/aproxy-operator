@@ -17,6 +17,12 @@ import typing
 import ops
 
 from aproxy import AproxyConfig, AproxyManager
+from errors import (
+    InvalidCharmConfigError,
+    NftApplyError,
+    NftCleanupError,
+    TopologyUnavailableError,
+)
 
 # Log messages can be retrieved using juju debug-log
 logger = logging.getLogger(__name__)
@@ -34,67 +40,74 @@ class AproxyCharm(ops.CharmBase):
             args: Arguments passed to the CharmBase parent constructor.
         """
         super().__init__(*args)
-        self.framework.observe(self.on.install, self._on_install)
+        self.framework.observe(self.on.install, self._on_start_and_configure)
         self.framework.observe(self.on.start, self._on_start_and_configure)
         self.framework.observe(self.on.config_changed, self._on_start_and_configure)
         self.framework.observe(self.on.stop, self._on_stop)
 
     # -------------------- Event Handlers --------------------
 
-    def _on_install(self, _: ops.InstallEvent) -> None:
-        """Handle install event for aproxy snap.
-
-        Raises:
-            CalledProcessError: if snap install fails.
-        """
-        self.unit.status = ops.MaintenanceStatus("Installing aproxy snap...")
-
-        if not AproxyManager.is_snap_installed():
-            try:
-                AproxyManager.install()
-                logger.info("Aproxy snap installed.")
-            except subprocess.CalledProcessError as e:
-                logger.error("Failed to install aproxy snap: %s", e)
-                raise
-
-        self.unit.status = ops.ActiveStatus("Aproxy snap successfully installed.")
-
     def _on_start_and_configure(self, _: ops.EventBase) -> None:
         """Handle start and config-changed events to configure aproxy."""
-        config = self._load_config()
-        if not config.proxy_address:
-            self.unit.status = ops.BlockedStatus("Missing target proxy address in config.")
-            return
-
-        aproxy = AproxyManager(config)
-
+        # Load config and initialize AproxyManager
         try:
-            if not AproxyManager.is_snap_installed():
-                self.unit.status = ops.MaintenanceStatus("Installing aproxy snap...")
-                AproxyManager.install()
-                logger.info("Aproxy snap installed.")
-            self.unit.status = ops.MaintenanceStatus("Configuring aproxy snap...")
-            aproxy.configure_target_proxy()
-            aproxy.write_nft_config()
-            aproxy.apply_nft_config()
-            aproxy.ensure_systemd_unit()
-        except (ValueError, ConnectionError, subprocess.CalledProcessError) as e:
-            logger.error("Failed to install or configure aproxy: %s", e)
-            self.unit.status = ops.BlockedStatus("Failed to install or configure aproxy.")
+            config = self._load_config()
+            aproxy = AproxyManager(config, self)
+        except InvalidCharmConfigError as e:
+            logger.error("Invalid charm configuration: %s", e)
+            self.unit.status = ops.BlockedStatus(f"Invalid charm configuration: {e}")
             return
 
-        self.unit.status = ops.ActiveStatus("Aproxy interception service started and configured.")
+        # Install aproxy snap
+        self.unit.status = ops.MaintenanceStatus("Installing aproxy snap...")
+        aproxy.install()
+        logger.info("Aproxy snap installed.")
+
+        # Configure aproxy
+        self.unit.status = ops.MaintenanceStatus("Configuring aproxy snap...")
+        try:
+            aproxy.configure_target_proxy()
+        except ConnectionError as e:
+            logger.error("Failed to configure aproxy: %s", e)
+            self.unit.status = ops.BlockedStatus(f"Failed to configure aproxy: {e}")
+            return
+
+        # Apply nft config
+        self.unit.status = ops.MaintenanceStatus("Applying nft configuration...")
+        try:
+            aproxy.check_relation_availability()
+            aproxy.apply_nft_config()
+            aproxy.persist_nft_config()
+        except TopologyUnavailableError as e:
+            logger.error("Juju relation or binding info unavailable: %s", e)
+            self.unit.status = ops.BlockedStatus(f"Juju relation or binding info unavailable: {e}")
+            return
+        except NftApplyError as e:
+            logger.error("Failed to apply nftables rules: %s", e)
+            self.unit.status = ops.BlockedStatus(str(e))
+            return
+
+        self.unit.status = ops.ActiveStatus(
+            f"Aproxy interception service started and configured on target proxy address: {config.proxy_address}:{config.proxy_port}"
+        )
 
     def _on_stop(self, _: ops.StopEvent) -> None:
         """Handle stop event to clean up nftables rules and remove aproxy snap."""
-        config = self._load_config()
-        aproxy = AproxyManager(config)
+        # Load config and initialize AproxyManager
+        try:
+            config = self._load_config()
+            aproxy = AproxyManager(config, self)
+        except InvalidCharmConfigError as e:
+            logger.error("Invalid charm configuration: %s", e)
+            self.unit.status = ops.BlockedStatus(f"Invalid charm configuration: {e}")
+            return
 
+        # Clean up nftables rules and remove aproxy snap
         try:
             aproxy.remove_systemd_unit()
             aproxy.remove_nft_config()
-            AproxyManager.uninstall()
-        except subprocess.CalledProcessError as e:
+            aproxy.uninstall()
+        except (NftCleanupError, subprocess.CalledProcessError) as e:
             logger.error("Failed to clean up aproxy or nftables: %s", e)
 
         self.unit.status = ops.ActiveStatus("Aproxy interception service stopped.")
@@ -103,13 +116,11 @@ class AproxyCharm(ops.CharmBase):
 
     def _load_config(self) -> AproxyConfig:
         """Load config from charm model config into ProxyConfig."""
-        conf = self.model.config
-        return AproxyConfig(
-            proxy_address=conf.get("proxy-address"),
-            proxy_port=conf.get("proxy-port"),
-            no_proxy=conf.get("exclude-addresses-from-proxy"),
-            intercept_ports=conf.get("intercept-ports"),
-        )
+        try:
+            config = AproxyConfig.from_charm(self)
+            return config
+        except InvalidCharmConfigError as exc:
+            raise InvalidCharmConfigError(exc) from exc
 
 
 if __name__ == "__main__":  # pragma: nocover
