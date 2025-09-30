@@ -263,9 +263,9 @@ class AproxyManager:
 
         Raises:
             TopologyUnavailableError: If the binding or network information is unavailable.
-        """  # or whatever relation your subordinate uses
+        """
         relation = self.charm.model.get_relation(RELATION_NAME)
-        binding = self.charm.model.get_binding(relation)
+        binding = self.charm.model.get_binding(RELATION_NAME)
 
         if not relation or not binding:
             raise TopologyUnavailableError(
