@@ -81,8 +81,7 @@ def deploy_charms_fixture(juju: jubilant.Juju, aproxy_charm_file: str, tinyproxy
     juju.deploy("ubuntu", base="ubuntu@24.04")
     juju.deploy(aproxy_charm_file)
     juju.integrate("ubuntu", "aproxy")
-    juju.cli("config", "aproxy", f"proxy-address={tinyproxy_url}")
-    juju.cli("config", "aproxy", "proxy-port=8888")
+    juju.cli("config", "aproxy", f"proxy-address={tinyproxy_url}:8888")
     juju.wait(jubilant.all_active, timeout=20 * 60)
 
 
