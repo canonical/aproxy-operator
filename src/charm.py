@@ -48,7 +48,7 @@ class AproxyCharm(ops.CharmBase):
     # -------------------- Event Handlers --------------------
 
     def _on_start_and_configure(self, _: ops.EventBase) -> None:
-        """Handle start and config-changed events to configure aproxy."""
+        """Handle install, start and config-changed events to configure aproxy."""
         # Load config and initialize AproxyManager
         try:
             config = self._load_config()
@@ -89,11 +89,15 @@ class AproxyCharm(ops.CharmBase):
             return
 
         self.unit.status = ops.ActiveStatus(
-            f"Aproxy interception service started and configured on target proxy address: {config.proxy_address}:{config.proxy_port}"
+            "Aproxy interception service started and configured "
+            + f"on target proxy address: {config.proxy_address}:{config.proxy_port}"
         )
 
     def _on_stop(self, _: ops.StopEvent) -> None:
-        """Handle stop event to clean up nftables rules and remove aproxy snap."""
+        """Handle stop event to clean up nftables rules and remove aproxy snap.
+
+        In case of clean up failures, errors are logged but the charm status is set to active.
+        """
         # Load config and initialize AproxyManager
         try:
             config = self._load_config()

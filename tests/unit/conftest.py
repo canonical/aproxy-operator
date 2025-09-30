@@ -9,9 +9,9 @@ import subprocess  # nosec
 
 import pytest
 from charms.operator_libs_linux.v2 import snap
-from errors import NftApplyError, NftCleanupError
 
 from aproxy import NFT_CONF_FILE
+from errors import NftApplyError, NftCleanupError
 
 
 class FakeSnap:
@@ -66,7 +66,15 @@ def patch_aproxy_manager(monkeypatch):
 
 @pytest.fixture
 def patch_aproxy_nft_failure(monkeypatch):
+    """Patch AproxyManager methods to simulate nftables failures."""
+
     def _do_patch(is_apply_failure: bool = False, is_cleanup_failure: bool = False):
+        """Patch AproxyManager methods to simulate nftables failures.
+
+        Args:
+            is_apply_failure: Simulate failure in apply_nft_config if True.
+            is_cleanup_failure: Simulate failure in remove_nft_config if True.
+        """
         if is_apply_failure:
             monkeypatch.setattr(
                 "aproxy.AproxyManager.apply_nft_config",

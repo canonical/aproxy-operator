@@ -1,12 +1,13 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# pylint: disable=no-self-argument
 """Aproxy controller.
 
 Contains:
  - AproxyConfig: pydantic model that holds configuration parsed from charm config
- - AproxyManager: install/remove/configure aproxy snap, build & apply nftables,
-   create a systemd unit that re-applies nftables on boot for persistence.
+ - AproxyManager: install/remove/configure aproxy snap, build & apply nft configuration,
+   create a systemd unit that re-applies nft configuration on boot for persistence.
 """
 
 import ipaddress
@@ -16,10 +17,9 @@ import socket
 import subprocess  # nosec: B404
 import textwrap
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 import ops
-
 from charms.operator_libs_linux.v1 import systemd
 from charms.operator_libs_linux.v2 import snap
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
@@ -60,7 +60,7 @@ class AproxyConfig(BaseModel):
     Attributes:
         model_config: Pydantic config to forbid extra fields.
         proxy_address: The target proxy address (hostname or IP).
-        proxy_port: The target proxy port (default is 3128).
+        proxy_port: The target proxy port.
         no_proxy: Comma-separated list of IPs, CIDRs, or hostnames to
             exclude from interception.
         intercept_ports_list: List of ports to intercept as strings.
@@ -75,32 +75,43 @@ class AproxyConfig(BaseModel):
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "AproxyConfig":
+        """Load and validate configuration from charm config.
+
+        Args:
+            charm: The charm instance, used to access model config.
+
+        Returns:
+            An AproxyConfig instance with validated configuration.
+
+        Raises:
+            InvalidCharmConfigError: If any configuration field is invalid.
+        """
         conf = charm.model.config
 
         # Parse proxy-address and proxy port
-        proxy_conf = conf.get("proxy-address", "").strip()
+        proxy_conf = str(conf.get("proxy-address", "")).strip()
         proxy_address, proxy_port = proxy_conf, DEFAULT_PROXY_PORT
         if ":" in proxy_conf:
             host, port_str = proxy_conf.split(":", 1)
             proxy_address = host.strip()
             try:
                 proxy_port = int(port_str)
-            except ValueError:
+            except ValueError as exc:
                 raise InvalidCharmConfigError(
                     f"proxy port must be between 1 and 65535 instead of {port_str}"
-                )
+                ) from exc
 
         # Parse no proxy list
         no_proxy = []
-        raw_no_proxy = conf.get("exclude-addresses-from-proxy", "")
+        raw_no_proxy = str(conf.get("exclude-addresses-from-proxy", ""))
         if raw_no_proxy:
             no_proxy = [entry.strip() for entry in raw_no_proxy.split(",") if entry.strip()]
 
-        # Parse intercept ports (string -> list)
-        intercept_ports_raw = conf.get("intercept-ports", "")
+        # Parse intercept ports
+        intercept_ports_raw = str(conf.get("intercept-ports", ""))
         intercept_ports_list = intercept_ports_raw.split(",") if intercept_ports_raw else []
 
-        # Build the AproxyConfig instance, validating fields
+        # Build the AproxyConfig instance and validate the fields
         try:
             return cls(
                 proxy_address=proxy_address,
@@ -109,9 +120,11 @@ class AproxyConfig(BaseModel):
                 intercept_ports_list=intercept_ports_list,
             )
         except ValidationError as exc:
-            # Collect which fields failed validation
-            error_field_str = ",".join(err["loc"][0] for err in exc.errors())
-            raise InvalidCharmConfigError(f"invalid configuration: {error_field_str}") from exc
+            # Format each error as "<field>: <message>"
+            error_field_str = ", ".join(
+                f"{'.'.join(map(str, err['loc']))}: {err['msg']}" for err in exc.errors()
+            )
+            raise InvalidCharmConfigError(error_field_str) from exc
 
     # ---------------- Validators ----------------
 
@@ -125,7 +138,7 @@ class AproxyConfig(BaseModel):
     @field_validator("proxy_port")
     def _validate_proxy_port(cls, proxy_port: int) -> int:
         """Validate that proxy_port is a valid port number."""
-        if not (0 < proxy_port < 65536):
+        if not 0 < proxy_port < 65536:
             raise ValueError(f"proxy port must be between 1 and 65535 instead of {proxy_port}")
         return proxy_port
 
@@ -141,12 +154,12 @@ class AproxyConfig(BaseModel):
                 # Check if it's a valid IP or CIDR
                 ipaddress.ip_network(entry, strict=False)
                 valid_no_proxy.append(entry)
-            except ValueError:
+            except ValueError as exc:
                 # If not an IP/CIDR, check if it's a valid hostname
                 if HOSTNAME_PATTERN.match(entry):
                     valid_no_proxy.append(entry)
                 else:
-                    raise ValueError(f"Invalid no_proxy entry {entry}")
+                    raise ValueError(f"invalid no_proxy entry {entry}") from exc
         return valid_no_proxy
 
     @field_validator("intercept_ports_list")
@@ -159,29 +172,18 @@ class AproxyConfig(BaseModel):
         if len(ports) == 1 and ports[0].upper() == "ALL":
             return ["1-65535"]
 
-        # Convert all port values to list of tuples representing port ranges
-        ranges = []
-        for item in ports:
-            if "-" in item:
-                try:
-                    start, end = map(int, item.split("-", 1))
-                except ValueError:
-                    raise ValueError(f"Invalid port range: {item}")
-                if not (1 <= start <= end <= 65535):
-                    raise ValueError(f"Port range must be between 1 and 65535 instead of {item}")
-                ranges.append((start, end))
-            else:
-                try:
-                    port = int(item)
-                except ValueError:
-                    raise ValueError(f"Port value must be of type integer instead of {item}")
-                if not (1 <= port <= 65535):
-                    raise ValueError(f"Port must be between 1 and 65535 instead of {item}")
-                ranges.append((port, port))
+        return cls._merge_port_ranges(ports)
+
+    # ---------------- Helpers ----------------
+
+    @classmethod
+    def _merge_port_ranges(cls, ports: List[str]) -> List[str]:
+        """Merge overlapping port ranges."""
+        ranges = cls._convert_ports_to_ranges(ports)
 
         # Merge overlapping ranges
         ranges.sort()
-        merged_port = []
+        merged_port: List[List[int]] = []
         for start, end in ranges:
             if not merged_port or merged_port[-1][1] < start - 1:
                 merged_port.append([start, end])
@@ -190,15 +192,42 @@ class AproxyConfig(BaseModel):
 
         return [f"{start}-{end}" if start != end else str(start) for start, end in merged_port]
 
+    @classmethod
+    def _convert_ports_to_ranges(cls, ports: List[str]) -> List[tuple]:
+        """Convert all port values to sorted ranges."""
+        ranges: List[tuple] = []
+        for item in ports:
+            if "-" in item:
+                try:
+                    start, end = map(int, item.split("-", 1))
+                except ValueError as exc:
+                    raise ValueError(f"invalid port range: {item}") from exc
+                if not 1 <= start <= end <= 65535:
+                    raise ValueError(f"port range must be between 1 and 65535 instead of {item}")
+                ranges.append((start, end))
+            else:
+                try:
+                    port = int(item)
+                except ValueError as exc:
+                    raise ValueError(
+                        f"port value must be of type integer instead of {item}"
+                    ) from exc
+                if not 1 <= port <= 65535:
+                    raise ValueError(f"port must be between 1 and 65535 instead of {item}")
+                ranges.append((port, port))
+
+        return ranges
+
 
 class AproxyManager:
-    """Manages aproxy snap and nftables persistence."""
+    """Manages aproxy snap and nft configuration persistence."""
 
     def __init__(self, config: AproxyConfig, charm: ops.CharmBase):
         """Construct.
 
         Args:
             config: AproxyConfig instance with current configuration.
+            charm: The charm instance, used to access model bindings.
         """
         self.config = config
         self.charm = charm
@@ -221,6 +250,7 @@ class AproxyManager:
 
     def is_snap_installed(self) -> bool:
         """Check if aproxy snap is installed.
+
         Returns:
             True if installed, False otherwise.
         """
@@ -231,10 +261,8 @@ class AproxyManager:
         """Configure aproxy snap with current config.
 
         Raises:
-            ValueError: If proxy_address is not set in config.
             ConnectionError: If the target proxy is not reachable.
         """
-
         target_proxy = f"{self.config.proxy_address}:{self.config.proxy_port}"
         if not self._is_proxy_reachable(self.config.proxy_address, self.config.proxy_port):
             logger.error("Proxy is not reachable at %s", target_proxy)
@@ -249,7 +277,7 @@ class AproxyManager:
 
         Args:
             host: The target proxy hostname or IP address.
-            port: The port number to check (default is 3128).
+            port: The port number to check.
         """
         try:
             with socket.create_connection((host, port), timeout=5):
@@ -262,9 +290,6 @@ class AproxyManager:
 
     def _get_primary_ip(self) -> str:
         """Get this unit's primary IP using Juju binding.
-
-        Args:
-            charm: The charm instance, used to access model bindings.
 
         Returns:
             The unit's bound private IP address.
@@ -305,7 +330,7 @@ class AproxyManager:
         """Render nftables rules for transparent proxy interception.
 
         - Redirect outbound traffic on configured intercept_ports to aproxy.
-        - Exclude private and loopback ranges.
+        - Exclude private loopback ranges.
         - Drop inbound traffic to aproxy listener to prevent reflection attacks.
 
         Returns:
@@ -351,8 +376,8 @@ class AproxyManager:
     def check_relation_availability(self) -> None:
         """Check if the Juju relation is available for topology resolution.
 
-        Args:
-            charm: The charm instance, used to access model bindings.
+        Raises:
+            TopologyUnavailableError: If the relation or binding information is unavailable.
         """
         try:
             self._get_primary_ip()
@@ -363,7 +388,7 @@ class AproxyManager:
         """Apply nft config immediately.
 
         Raises:
-            CalledProcessError: If the nft command fails.
+            NftApplyError: If applying the nft command fails.
         """
         # Write nft config to disk
         NFT_CONF_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -381,7 +406,7 @@ class AproxyManager:
         """Remove nft table.
 
         Raises:
-            CalledProcessError: If the nft command fails.
+            NftCleanupError: If cleaning up the nft command fails.
         """
         try:
             # nosec B404,B603,B607: trusted binary, no untrusted input
@@ -395,7 +420,10 @@ class AproxyManager:
     # ---------------- systemd ----------------
 
     def persist_nft_config(self) -> None:
-        """Ensure nftables config persistence via systemd since the nftables rules will be removed on server reboot."""
+        """Ensure nft configuration persistence via systemd.
+
+        This is needed since the nft configuration will be removed on server reboot.
+        """
         content = f"""
         [Unit]
         Description=Aproxy nftables rules

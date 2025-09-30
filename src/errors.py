@@ -9,19 +9,31 @@ class InvalidCharmConfigError(Exception):
 
 
 class NftApplyError(Exception):
-    """Raised when applying nftables rules fails."""
+    """Raised when applying nft configuration fails."""
 
     def __init__(self, original: Exception, config_path: str):
-        super().__init__(f"Failed to apply nftables rules from {config_path}")
+        """Initialize.
+
+        Args:
+            original: The original exception that caused the failure.
+            config_path: The path to the nft configuration file that was being applied.
+        """
+        super().__init__(f"Failed to apply nft configuration from {config_path}")
         self.original = original
         self.config_path = config_path
 
 
 class NftCleanupError(Exception):
-    """Raised when cleaning up nftables rules fails."""
+    """Raised when cleaning up nft configuration fails."""
 
     def __init__(self, original: Exception, config_path: str):
-        super().__init__(f"Failed to clean up nftables rules from {config_path}")
+        """Initialize.
+
+        Args:
+            original: The original exception that caused the failure.
+            config_path: The path to the nft configuration file that was being cleaned up.
+        """
+        super().__init__(f"Failed to clean up nft configuration from {config_path}")
         self.original = original
         self.config_path = config_path
 
