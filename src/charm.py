@@ -3,30 +3,28 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# Learn more at: https://documentation.ubuntu.com/juju/3.6/howto/manage-charms/#build-a-charm
+"""Subordinate charm for aproxy.
 
-"""Charm the service.
-
-Refer to the following post for a quick-start guide that will help you
-develop a new k8s charm using the Operator Framework:
-
-https://discourse.charmhub.io/t/4208
+This charm installs and manages the aproxy snap, applies nftables REDIRECT
+rules, and ensures outbound HTTP/HTTPS traffic is intercepted and forwarded
+through aproxy.
 """
 
 import logging
+import socket
+
+# nosec B404: subprocess usage is intentional and safe (predefined executables only).
+import subprocess  # nosec
 import typing
 
 import ops
-from ops import pebble
 
 # Log messages can be retrieved using juju debug-log
 logger = logging.getLogger(__name__)
 
-VALID_LOG_LEVELS = ["info", "debug", "warning", "error", "critical"]
 
-
-class IsCharmsTemplateCharm(ops.CharmBase):
-    """Charm the service."""
+class AproxyCharm(ops.CharmBase):
+    """Charm the aproxy service."""
 
     def __init__(self, *args: typing.Any):
         """Construct.
@@ -35,85 +33,198 @@ class IsCharmsTemplateCharm(ops.CharmBase):
             args: Arguments passed to the CharmBase parent constructor.
         """
         super().__init__(*args)
-        self.framework.observe(self.on.httpbin_pebble_ready, self._on_httpbin_pebble_ready)
+        self._target_proxy = str(self.config.get("proxy-address", ""))
+        self._no_proxy = str(self.config.get("no-proxy"))
+        self._intercept_ports = str(self.config.get("intercept-ports"))
+
+        self.framework.observe(self.on.install, self._on_install)
+        self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.stop, self._on_stop)
 
-    def _on_httpbin_pebble_ready(self, event: ops.PebbleReadyEvent) -> None:
-        """Define and start a workload using the Pebble API.
+    # -------------------- Event Handlers --------------------
 
-        Change this example to suit your needs. You'll need to specify the right entrypoint and
-        environment configuration for your specific workload.
+    def _on_install(self, _: ops.InstallEvent) -> None:
+        """Handle install event for aproxy snap.
 
-        Learn more about interacting with Pebble at at
-        https://documentation.ubuntu.com/juju/3.6/reference/pebble/.
+        Raises:
+            CalledProcessError: If snap installation fails.
+        """
+        self.unit.status = ops.MaintenanceStatus("Installing aproxy snap...")
+
+        if not self._target_proxy:
+            self.unit.status = ops.BlockedStatus("Missing target proxy address in config.")
+            return
+
+        try:
+            # nosec B404,B603,B607: calling trusted system binary with predefined args
+            subprocess.run(["snap", "install", "aproxy", "--edge"], check=True)  # nosec
+            logger.info("Installed aproxy snap.")
+        except subprocess.CalledProcessError as e:
+            logger.error("Failed to install aproxy snap: %s", e)
+            raise
+
+        self.unit.status = ops.ActiveStatus("Aproxy snap successfully installed.")
+
+    def _on_start(self, _: ops.StartEvent) -> None:
+        """Handle start event for configuring nftables rules."""
+        self.unit.status = ops.MaintenanceStatus("Starting aproxy interception service...")
+
+        if not self._is_aproxy_configured():
+            return
+        self.unit.status = ops.ActiveStatus("Aproxy interception service started.")
+
+    def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
+        """Reconfigure aproxy and nftables after charm config changes."""
+        self.unit.status = ops.MaintenanceStatus("Applying config changes...")
+
+        # Refresh config values
+        self._target_proxy = str(self.config.get("proxy-address", ""))
+        self._no_proxy = str(self.config.get("no-proxy"))
+        self._intercept_ports = str(self.config.get("intercept-ports"))
+
+        if not self._is_aproxy_configured():
+            return
+        self.unit.status = ops.ActiveStatus("Proxy reconfigured and interception enabled.")
+
+    def _on_stop(self, _: ops.StopEvent) -> None:
+        """Handle stop event to clean up nftables rules and remove aproxy snap."""
+        self.unit.status = ops.MaintenanceStatus("Stopping aproxy interception service...")
+
+        # Remove nftables rules
+        try:
+            # nosec B404,B603,B607: trusted binary, no untrusted input
+            subprocess.run(["nft", "flush", "table", "ip", "aproxy"], check=True)  # nosec
+            subprocess.run(["nft", "delete", "table", "ip", "aproxy"], check=True)  # nosec
+            logger.info("Cleaned up nftables rules.")
+        except subprocess.CalledProcessError as e:
+            logger.error("Failed to clean up nftables rules: %s", e)
+            self.unit.status = ops.BlockedStatus("Failed to clean up nftables rules.")
+            return
+
+        # Remove aproxy snap
+        try:
+            # nosec B404,B603,B607: trusted binary, no untrusted input
+            subprocess.run(["snap", "remove", "aproxy"], check=True)  # nosec
+            logger.info("Removed aproxy snap.")
+        except subprocess.CalledProcessError as e:
+            logger.error("Failed to remove aproxy snap: %s", e)
+            self.unit.status = ops.BlockedStatus("Failed to remove aproxy snap.")
+            return
+
+        self.unit.status = ops.ActiveStatus("Aproxy interception service stopped.")
+
+    # -------------------- Helpers --------------------
+
+    def _is_proxy_reachable(self, host: str, port: int = 3128) -> bool:
+        """Check if the target proxy is reachable on the specified port.
 
         Args:
-            event: event triggering the handler.
+            host: The target proxy hostname or IP address.
+            port: The port number to check (default is 3128).
         """
-        # Get a reference the container attribute on the PebbleReadyEvent
-        container = event.workload
-        # Add initial Pebble config layer using the Pebble API
-        container.add_layer("httpbin", self._pebble_layer, combine=True)
-        # Make Pebble reevaluate its plan, ensuring any services are started if enabled.
-        container.replan()
-        # Learn more about statuses in the SDK docs:
-        # https://documentation.ubuntu.com/juju/latest/reference/status/index.html
-        self.unit.status = ops.ActiveStatus()
+        try:
+            with socket.create_connection((host, port), timeout=5):
+                return True
+        except (socket.timeout, ConnectionRefusedError, OSError) as e:
+            logger.error("Proxy %s:%s is not reachable: %s", host, port, e)
+            return False
 
-    def _on_config_changed(self, event: ops.ConfigChangedEvent) -> None:
-        """Handle changed configuration.
+    def _configure_target_proxy(self) -> bool:
+        """Configure aproxy snap with proxy settings.
 
-        Change this example to suit your needs. If you don't need to handle config, you can remove
-        this method.
+        Returns:
+            True if target proxy is successfully configured, False otherwise.
+        """
+        if not self._target_proxy:
+            self.unit.status = ops.BlockedStatus("Missing target proxy address in config.")
+            return False
 
-        Learn more about config at
-        https://canonical-charmcraft.readthedocs-hosted.com/stable/reference/files/config-yaml-file/
+        if not self._is_proxy_reachable(self._target_proxy, 3128):
+            logger.warning("Proxy is not reachable at %s:3128", self._target_proxy)
+            self.unit.status = ops.BlockedStatus(
+                f"Target proxy is unreachable at {self._target_proxy}:3128."
+            )
+            return False
+
+        try:
+            # nosec B404,B603,B607: calling trusted system binary with predefined args
+            subprocess.run(
+                ["snap", "set", "aproxy", f"proxy={self._target_proxy}:3128"],  # nosec
+                check=True,
+            )
+            logger.info("Configured aproxy snap with target proxy=%s:3128.", self._target_proxy)
+        except subprocess.CalledProcessError as e:
+            logger.error("Failed to configure aproxy snap: %s", e)
+            self.unit.status = ops.BlockedStatus("Failed to configure aproxy snap.")
+            return False
+        return True
+
+    def _format_ports(self, ports: str) -> str:
+        """Format a comma-separated list of ports into nftables port set syntax.
 
         Args:
-            event: event triggering the handler.
+            ports: Comma-separated string of port numbers.
         """
-        # Fetch the new config value
-        log_level = str(self.model.config["log-level"]).lower()
+        if ports.strip().upper() == "ALL":
+            return "0-65535"
+        return ", ".join(port.strip() for port in ports.split(",") if port.strip())
 
-        # Do some validation of the configuration option
-        if log_level in VALID_LOG_LEVELS:
-            # The config is good, so update the configuration of the workload
-            container = self.unit.get_container("httpbin")
-            # Verify that we can connect to the Pebble API in the workload container
-            if container.can_connect():
-                # Push an updated layer with the new config
-                container.add_layer("httpbin", self._pebble_layer, combine=True)
-                container.replan()
+    def _apply_nftables_rules(self) -> bool:
+        """Apply nftables rules for transparent proxy interception.
 
-                logger.debug("Log level for gunicorn changed to '%s'", log_level)
-                self.unit.status = ops.ActiveStatus()
-            else:
-                # We were unable to connect to the Pebble API, so we defer this event
-                event.defer()
-                self.unit.status = ops.WaitingStatus("waiting for Pebble API")
-        else:
-            # In this case, the config option is bad, so block the charm and notify the operator.
-            self.unit.status = ops.BlockedStatus("invalid log level: '{log_level}'")
+        - Redirect outbound traffic on configured intercept_ports to aproxy (127.0.0.1:8443).
+        - Exclude private and loopback ranges.
+        - Drop inbound traffic to aproxy listener to prevent reflection attacks.
 
-    @property
-    def _pebble_layer(self) -> pebble.LayerDict:
-        """Return a dictionary representing a Pebble layer."""
-        return {
-            "summary": "httpbin layer",
-            "description": "pebble config layer for httpbin",
-            "services": {
-                "httpbin": {
-                    "override": "replace",
-                    "summary": "httpbin",
-                    "command": "gunicorn -b 0.0.0.0:80 httpbin:app -k gevent",
-                    "startup": "enabled",
-                    "environment": {
-                        "GUNICORN_CMD_ARGS": f"--log-level {self.model.config['log-level']}"
-                    },
-                }
-            },
-        }
+        Returns:
+            True if rules were successfully applied, False otherwise.
+        """
+        no_proxy_list = [ip.strip() for ip in self._no_proxy.split(",") if ip.strip()]
+        no_proxy_clause = (
+            f"ip daddr {{ {', '.join(no_proxy_list)} }} return" if no_proxy_list else ""
+        )
+        ports_clause = self._format_ports(self._intercept_ports)
+
+        rules = f"""
+        table ip aproxy
+        flush table ip aproxy
+        table ip aproxy {{
+            chain prerouting {{
+                type nat hook prerouting priority dstnat; policy accept;
+                {no_proxy_clause}
+                ip daddr != {{ 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 }} \
+                    tcp dport {{ {ports_clause} }} counter dnat to 127.0.0.1:8443
+            }}
+
+            chain output {{
+                type nat hook output priority -100; policy accept;
+                ip daddr != {{ 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 }} \
+                    tcp dport {{ {ports_clause} }} counter dnat to 127.0.0.1:8443
+            }}
+
+            chain input {{
+                type filter hook input priority 0; policy accept;
+                tcp dport 8443 drop
+            }}
+        }}
+        """
+        try:
+            # nosec B404,B603,B607: calling trusted system binary with predefined args
+            subprocess.run(["nft", "-f", "-"], input=rules.encode(), check=True)  # nosec
+            logger.info("Applied nftables rules successfully.")
+        except subprocess.CalledProcessError as e:
+            logger.error("Failed to apply nftables rules: %s", e)
+            self.unit.status = ops.BlockedStatus("Failed to configure nftables.")
+            return False
+        return True
+
+    def _is_aproxy_configured(self) -> bool:
+        """Ensure aproxy snap is configured and nftables rules are applied."""
+        if self._configure_target_proxy() and self._apply_nftables_rules():
+            return True
+        return False
 
 
 if __name__ == "__main__":  # pragma: nocover
-    ops.main.main(IsCharmsTemplateCharm)
+    ops.main.main(AproxyCharm)
