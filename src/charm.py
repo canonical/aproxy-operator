@@ -59,9 +59,10 @@ class AproxyCharm(ops.CharmBase):
             return
 
         # Install aproxy snap
-        self.unit.status = ops.MaintenanceStatus("Installing aproxy snap...")
-        aproxy.install()
-        logger.info("Aproxy snap installed.")
+        if not aproxy.is_snap_installed():
+            self.unit.status = ops.MaintenanceStatus("Installing aproxy snap...")
+            aproxy.install()
+            logger.info("Aproxy snap installed.")
 
         # Configure aproxy
         self.unit.status = ops.MaintenanceStatus("Configuring aproxy snap...")

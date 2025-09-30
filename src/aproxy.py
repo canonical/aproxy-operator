@@ -219,6 +219,14 @@ class AproxyManager:
         snap_cache = snap.SnapCache()
         snap_cache[APROXY_SNAP_NAME].ensure(state=snap.SnapState.Absent)
 
+    def is_snap_installed(self) -> bool:
+        """Check if aproxy snap is installed.
+        Returns:
+            True if installed, False otherwise.
+        """
+        snap_cache = snap.SnapCache()
+        return snap_cache[APROXY_SNAP_NAME].present
+
     def configure_target_proxy(self) -> None:
         """Configure aproxy snap with current config.
 
