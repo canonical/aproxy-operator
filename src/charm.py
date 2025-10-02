@@ -3,30 +3,35 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# Learn more at: https://documentation.ubuntu.com/juju/3.6/howto/manage-charms/#build-a-charm
+"""Subordinate charm for aproxy.
 
-"""Charm the service.
-
-Refer to the following post for a quick-start guide that will help you
-develop a new k8s charm using the Operator Framework:
-
-https://discourse.charmhub.io/t/4208
+This charm installs and manages the aproxy snap, applies nftables REDIRECT
+rules, and ensures outbound TCP traffic is intercepted and forwarded
+through aproxy.
 """
 
 import logging
+import subprocess  # nosec: B404
 import typing
 
 import ops
-from ops import pebble
+
+from aproxy import AproxyConfig, AproxyManager
+from errors import (
+    InvalidCharmConfigError,
+    NftApplyError,
+    NftCleanupError,
+    RelationMissingError,
+)
 
 # Log messages can be retrieved using juju debug-log
 logger = logging.getLogger(__name__)
 
-VALID_LOG_LEVELS = ["info", "debug", "warning", "error", "critical"]
+APROXY_SNAP_NAME = "aproxy"
 
 
-class IsCharmsTemplateCharm(ops.CharmBase):
-    """Charm the service."""
+class AproxyCharm(ops.CharmBase):
+    """Charm the aproxy service."""
 
     def __init__(self, *args: typing.Any):
         """Construct.
@@ -35,85 +40,88 @@ class IsCharmsTemplateCharm(ops.CharmBase):
             args: Arguments passed to the CharmBase parent constructor.
         """
         super().__init__(*args)
-        self.framework.observe(self.on.httpbin_pebble_ready, self._on_httpbin_pebble_ready)
-        self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.install, self._on_start_and_configure)
+        self.framework.observe(self.on.start, self._on_start_and_configure)
+        self.framework.observe(self.on.config_changed, self._on_start_and_configure)
+        self.framework.observe(self.on.stop, self._on_stop)
 
-    def _on_httpbin_pebble_ready(self, event: ops.PebbleReadyEvent) -> None:
-        """Define and start a workload using the Pebble API.
+    # -------------------- Event Handlers --------------------
 
-        Change this example to suit your needs. You'll need to specify the right entrypoint and
-        environment configuration for your specific workload.
+    def _on_start_and_configure(self, _: ops.EventBase) -> None:
+        """Handle install, start and config-changed events to configure aproxy.
 
-        Learn more about interacting with Pebble at at
-        https://documentation.ubuntu.com/juju/3.6/reference/pebble/.
-
-        Args:
-            event: event triggering the handler.
+        This function includes:
+        - Loading configuration and initializing AproxyManager.
+        - Installing the aproxy snap if not already installed.
+        - Configuring the aproxy snap with the target proxy address and port.
+        - Applying nft configuration to intercept outbound TCP traffic.
+        - Setting the charm status to Active if successful, or Blocked if any step fails.
         """
-        # Get a reference the container attribute on the PebbleReadyEvent
-        container = event.workload
-        # Add initial Pebble config layer using the Pebble API
-        container.add_layer("httpbin", self._pebble_layer, combine=True)
-        # Make Pebble reevaluate its plan, ensuring any services are started if enabled.
-        container.replan()
-        # Learn more about statuses in the SDK docs:
-        # https://documentation.ubuntu.com/juju/latest/reference/status/index.html
-        self.unit.status = ops.ActiveStatus()
+        try:
+            config = AproxyConfig.from_charm(self)
+            aproxy = AproxyManager(config, self)
+        except InvalidCharmConfigError as e:
+            logger.error("Invalid charm configuration: %s", e)
+            self.unit.status = ops.BlockedStatus(f"Invalid charm configuration: {e}")
+            return
 
-    def _on_config_changed(self, event: ops.ConfigChangedEvent) -> None:
-        """Handle changed configuration.
+        if not aproxy.is_snap_installed():
+            self.unit.status = ops.MaintenanceStatus("Installing aproxy snap...")
+            aproxy.install()
+            logger.info("Aproxy snap installed.")
 
-        Change this example to suit your needs. If you don't need to handle config, you can remove
-        this method.
+        self.unit.status = ops.MaintenanceStatus("Configuring aproxy snap...")
+        try:
+            aproxy.configure_target_proxy()
+        except ConnectionError as e:
+            logger.error("Failed to configure aproxy: %s", e)
+            self.unit.status = ops.BlockedStatus(f"Failed to configure aproxy: {e}")
+            return
 
-        Learn more about config at
-        https://canonical-charmcraft.readthedocs-hosted.com/stable/reference/files/config-yaml-file/
+        self.unit.status = ops.MaintenanceStatus("Applying nft configuration...")
+        try:
+            aproxy.check_relation_availability()
+        except RelationMissingError as e:
+            logger.error("Juju relation is unavailable: %s", e)
+            self.unit.status = ops.BlockedStatus(f"Juju relation is unavailable: {e}")
+            return
 
-        Args:
-            event: event triggering the handler.
+        try:
+            aproxy.apply_nft_config()
+            aproxy.persist_nft_config()
+        except NftApplyError as e:
+            logger.error("Failed to apply nftables rules: %s", e)
+            self.unit.status = ops.BlockedStatus(str(e))
+            return
+
+        self.unit.status = ops.ActiveStatus(
+            f"Service ready on target proxy {config.proxy_address}:{config.proxy_port}"
+        )
+
+    def _on_stop(self, _: ops.StopEvent) -> None:
+        """Handle stop event to clean up nftables rules and remove aproxy snap.
+
+        In case of clean up failures, errors are logged.
         """
-        # Fetch the new config value
-        log_level = str(self.model.config["log-level"]).lower()
+        # Load config and initialize AproxyManager
+        try:
+            config = AproxyConfig.from_charm(self)
+            aproxy = AproxyManager(config, self)
+        except InvalidCharmConfigError as e:
+            logger.error("Invalid charm configuration: %s", e)
+            self.unit.status = ops.BlockedStatus(f"Invalid charm configuration: {e}")
+            return
 
-        # Do some validation of the configuration option
-        if log_level in VALID_LOG_LEVELS:
-            # The config is good, so update the configuration of the workload
-            container = self.unit.get_container("httpbin")
-            # Verify that we can connect to the Pebble API in the workload container
-            if container.can_connect():
-                # Push an updated layer with the new config
-                container.add_layer("httpbin", self._pebble_layer, combine=True)
-                container.replan()
+        # Clean up nftables rules and remove aproxy snap
+        try:
+            aproxy.remove_systemd_unit()
+            aproxy.remove_nft_config()
+            aproxy.uninstall()
+        except (NftCleanupError, subprocess.CalledProcessError) as e:
+            logger.error("Failed to clean up aproxy or nftables: %s", e)
 
-                logger.debug("Log level for gunicorn changed to '%s'", log_level)
-                self.unit.status = ops.ActiveStatus()
-            else:
-                # We were unable to connect to the Pebble API, so we defer this event
-                event.defer()
-                self.unit.status = ops.WaitingStatus("waiting for Pebble API")
-        else:
-            # In this case, the config option is bad, so block the charm and notify the operator.
-            self.unit.status = ops.BlockedStatus("invalid log level: '{log_level}'")
-
-    @property
-    def _pebble_layer(self) -> pebble.LayerDict:
-        """Return a dictionary representing a Pebble layer."""
-        return {
-            "summary": "httpbin layer",
-            "description": "pebble config layer for httpbin",
-            "services": {
-                "httpbin": {
-                    "override": "replace",
-                    "summary": "httpbin",
-                    "command": "gunicorn -b 0.0.0.0:80 httpbin:app -k gevent",
-                    "startup": "enabled",
-                    "environment": {
-                        "GUNICORN_CMD_ARGS": f"--log-level {self.model.config['log-level']}"
-                    },
-                }
-            },
-        }
+        self.unit.status = ops.MaintenanceStatus("Aproxy interception service stopped.")
 
 
 if __name__ == "__main__":  # pragma: nocover
-    ops.main.main(IsCharmsTemplateCharm)
+    ops.main.main(AproxyCharm)

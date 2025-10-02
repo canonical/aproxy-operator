@@ -4,3 +4,4 @@ docs/*	@erinecon
 docs/changelog.md 
 
 # Add relevant CODEOWNERS here
+@canonical/platform-engineering @florentianayuwono
