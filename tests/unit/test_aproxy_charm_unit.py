@@ -28,8 +28,7 @@ def test_install_with_proxy_config_should_succeed(patch_proxy_check):
     out = ctx.run(ctx.on.install(), state)
 
     assert out.unit_status == testing.ActiveStatus(
-        "Aproxy interception service started and configured "
-        + "on target proxy address: target.proxy:3128"
+        "Service ready on target proxy target.proxy:3128"
     )
 
 
@@ -80,8 +79,7 @@ def test_start_proxy_reachable_should_succeed(patch_proxy_check):
     out = ctx.run(ctx.on.start(), state)
 
     assert out.unit_status == testing.ActiveStatus(
-        "Aproxy interception service started and configured "
-        + "on target proxy address: target.proxy:3128"
+        "Service ready on target proxy target.proxy:3128"
     )
 
 
@@ -150,8 +148,7 @@ def test_config_changed_should_succeed(patch_proxy_check):
     out = ctx.run(ctx.on.config_changed(), state)
 
     assert out.unit_status == testing.ActiveStatus(
-        "Aproxy interception service started and configured "
-        + "on target proxy address: modified.proxy:3128"
+        "Service ready on target proxy modified.proxy:3128"
     )
 
 
@@ -200,7 +197,7 @@ def test_stop_should_succeed():
 
     out = ctx.run(ctx.on.stop(), state)
 
-    assert out.unit_status == testing.ActiveStatus("Aproxy interception service stopped.")
+    assert out.unit_status == testing.MaintenanceStatus("Aproxy interception service stopped.")
 
 
 def test_stop_with_nftables_cleanup_failure_should_succeed(patch_aproxy_nft_failure, caplog):
@@ -216,7 +213,7 @@ def test_stop_with_nftables_cleanup_failure_should_succeed(patch_aproxy_nft_fail
 
     out = ctx.run(ctx.on.stop(), state)
 
-    assert out.unit_status == testing.ActiveStatus("Aproxy interception service stopped.")
+    assert out.unit_status == testing.MaintenanceStatus("Aproxy interception service stopped.")
     assert "Failed to clean up aproxy or nftables" in caplog.text
 
 
@@ -233,5 +230,5 @@ def test_stop_with_snap_removal_failure_should_succeed(patch_subprocess_failure,
 
     out = ctx.run(ctx.on.stop(), state)
 
-    assert out.unit_status == testing.ActiveStatus("Aproxy interception service stopped.")
+    assert out.unit_status == testing.MaintenanceStatus("Aproxy interception service stopped.")
     assert "Failed to clean up aproxy or nftables" in caplog.text

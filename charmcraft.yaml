@@ -46,7 +46,9 @@ config:
       description: |
         Configures the target proxy IP address and port for traffic forwarding.
 
-        For example: "1.2.3.4:8888" or "1.2.3.4". If no port is specified, the default port value of 3128 will be used.
+        For example: "1.2.3.4:8888" or "1.2.3.4".
+        If no proxy is specified, the default proxy is the principal charm's juju-https-proxy or juju-http-proxy relation data.
+        If no port is specified, the default port value of 3128 will be used.
       type: string
     exclude-addresses-from-proxy:
       description: Comma-separated list of IP or hostname addresses that should bypass the proxy.

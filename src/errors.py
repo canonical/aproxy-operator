@@ -38,5 +38,9 @@ class NftCleanupError(Exception):
         self.config_path = config_path
 
 
+class RelationMissingError(Exception):
+    """Raised when a required Juju relation is missing."""
+
+
 class TopologyUnavailableError(Exception):
-    """Raised when Juju relation/binding info is unavailable for topology resolution."""
+    """Raised when Juju binding info is unavailable for topology resolution."""

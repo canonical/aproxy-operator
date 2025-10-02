@@ -28,6 +28,7 @@ from errors import (
     InvalidCharmConfigError,
     NftApplyError,
     NftCleanupError,
+    RelationMissingError,
     TopologyUnavailableError,
 )
 
@@ -47,7 +48,7 @@ RELATION_NAME = "juju-info"
 # (?!-)            : no leading dash
 # (?!.*--)         : no consecutive dashes
 # (?!.*-$)         : no trailing dash
-# ([a-zA-Z0-9-]{1,63}\.)*  : 1–63 chars per label, with dots allowed as separators
+# ([a-zA-Z0-9-]{1,63}\.)*    : 1–63 chars per label, with dots allowed as separators
 # ([a-zA-Z0-9-]{1,63})\.?$   : last label (with one dot allowed at the end)
 HOSTNAME_PATTERN = re.compile(
     r"^\.?(?!-)(?!.*--)(?!.*-$)([a-zA-Z0-9-]{1,63}\.)*([a-zA-Z0-9-]{1,63})\.?$"
@@ -89,16 +90,18 @@ class AproxyConfig(BaseModel):
         conf = charm.model.config
 
         # Parse proxy-address and proxy port
-        proxy_conf = str(conf.get("proxy-address", "")).strip()
+        fallback_proxy = cls._get_principal_proxy_address(charm.model.get_relation(RELATION_NAME))
+        proxy_conf = str(conf.get("proxy-address", fallback_proxy)).strip()
         proxy_address, proxy_port = proxy_conf, DEFAULT_PROXY_PORT
+
         if ":" in proxy_conf:
-            host, port_str = proxy_conf.split(":", 1)
+            host, port_str = proxy_conf.rsplit(":", 1)
             proxy_address = host.strip()
             try:
                 proxy_port = int(port_str)
             except ValueError as exc:
                 raise InvalidCharmConfigError(
-                    f"proxy port must be between 1 and 65535 instead of {port_str}"
+                    f"port value must be of type integer instead of {port_str}"
                 ) from exc
 
         # Parse no proxy list
@@ -197,26 +200,44 @@ class AproxyConfig(BaseModel):
         """Convert all port values to sorted ranges."""
         ranges: List[tuple] = []
         for item in ports:
-            if "-" in item:
-                try:
-                    start, end = map(int, item.split("-", 1))
-                except ValueError as exc:
-                    raise ValueError(f"invalid port range: {item}") from exc
-                if not 1 <= start <= end <= 65535:
-                    raise ValueError(f"port range must be between 1 and 65535 instead of {item}")
-                ranges.append((start, end))
-            else:
-                try:
-                    port = int(item)
-                except ValueError as exc:
-                    raise ValueError(
-                        f"port value must be of type integer instead of {item}"
-                    ) from exc
-                if not 1 <= port <= 65535:
-                    raise ValueError(f"port must be between 1 and 65535 instead of {item}")
-                ranges.append((port, port))
+            if "-" not in item:
+                item = f"{item}-{item}"
+            try:
+                start, end = map(int, item.split("-", 1))
+            except ValueError as exc:
+                raise ValueError(f"invalid port range: {item}") from exc
+            if not 1 <= start <= end <= 65535:
+                raise ValueError(f"port range must be between 1 and 65535 instead of {item}")
+            ranges.append((start, end))
 
         return ranges
+
+    @classmethod
+    def _get_principal_proxy_address(cls, relation: ops.model.Relation | None) -> str:
+        """Get the principal charm's proxy address from the relation data.
+
+        Args:
+            relation: The Juju relation to the principal charm.
+
+        Returns:
+            The proxy address (hostname or IP) if set, else an empty string.
+        """
+        proxy_conf = ""
+        if not relation:
+            return proxy_conf
+
+        app_data = relation.data.get(relation.app)
+        unit_data = next(iter(relation.units), None)
+        if app_data and ("juju-https-proxy" in app_data or "juju-http-proxy" in app_data):
+            proxy_conf = app_data.get("juju-https-proxy") or app_data.get("juju-http-proxy") or ""
+        elif unit_data:
+            unit_conf = relation.data[unit_data]
+            proxy_conf = (
+                unit_conf.get("juju-https-proxy") or unit_conf.get("juju-http-proxy") or ""
+            )
+
+        # Strip any leading http:// or https://
+        return re.sub(r"^https?://", "", proxy_conf)
 
 
 class AproxyManager:
@@ -231,6 +252,8 @@ class AproxyManager:
         """
         self.config = config
         self.charm = charm
+        self.relation: ops.model.Relation
+        self.binding: ops.model.Binding
 
     # ---------------- Snap ----------------
 
@@ -293,37 +316,23 @@ class AproxyManager:
 
         Returns:
             The unit's bound private IP address.
-
-        Raises:
-            TopologyUnavailableError: If the binding or network information is unavailable.
         """
-        relation = self.charm.model.get_relation(RELATION_NAME)
-        binding = self.charm.model.get_binding(RELATION_NAME)
+        current_unit_ip = str(self.binding.network.bind_address)
 
-        if not relation or not binding:
-            raise TopologyUnavailableError(
-                f"Relation '{RELATION_NAME}' binding not available when trying to get topology."
+        if logger.getEffectiveLevel() == logging.DEBUG:
+            units_ip: list[str] = [
+                unit_data.get("private-address", "")
+                for _, unit_data in self.relation.data.items()
+                if unit_data.get("private-address", "")
+            ]
+
+            logger.debug(
+                "Resolved unit IP %s via relation '%s' (all peer IPs: %s)",
+                current_unit_ip,
+                RELATION_NAME,
+                units_ip,
             )
 
-        if binding.network is None:
-            raise TopologyUnavailableError(
-                f"Relation '{RELATION_NAME}' network not available when trying to get unit IP."
-            )
-
-        units_ip: list[str] = [
-            unit_data.get("private-address", "")
-            for _, unit_data in relation.data.items()
-            if unit_data.get("private-address", "")
-        ]
-
-        current_unit_ip = str(binding.network.bind_address)
-
-        logger.debug(
-            "Resolved unit IP %s via relation '%s' (all peer IPs: %s)",
-            current_unit_ip,
-            RELATION_NAME,
-            units_ip,
-        )
         return current_unit_ip
 
     def _render_nft_rules(self) -> str:
@@ -377,12 +386,25 @@ class AproxyManager:
         """Check if the Juju relation is available for topology resolution.
 
         Raises:
-            TopologyUnavailableError: If the relation or binding information is unavailable.
+            RelationMissingError: If the required relation is missing.
+            TopologyUnavailableError: If the binding information is unavailable.
         """
-        try:
-            self._get_primary_ip()
-        except TopologyUnavailableError as e:
-            raise TopologyUnavailableError(f"Failed to get unit IP: {e}") from e
+        relation = self.charm.model.get_relation(RELATION_NAME)
+        binding = self.charm.model.get_binding(RELATION_NAME)
+
+        if not relation:
+            raise RelationMissingError(
+                f"Missing relation '{RELATION_NAME}' to the principal charm."
+            )
+
+        if not binding or binding.network is None:
+            raise TopologyUnavailableError(
+                f"Relation '{RELATION_NAME}' network not available when trying to get unit IP."
+            )
+
+        # Set for later use to get primary IP
+        self.relation = relation
+        self.binding = binding
 
     def apply_nft_config(self) -> None:
         """Apply nft config immediately.
