@@ -12,6 +12,7 @@ Contains:
 
 import ipaddress
 import logging
+import os
 import re
 import socket
 import subprocess  # nosec: B404
@@ -90,7 +91,7 @@ class AproxyConfig(BaseModel):
         conf = charm.model.config
 
         # Parse proxy-address and proxy port
-        fallback_proxy = cls._get_principal_proxy_address(charm.model.get_relation(RELATION_NAME))
+        fallback_proxy = cls._get_principal_proxy_address()
         proxy_conf = str(conf.get("proxy-address", fallback_proxy)).strip()
         proxy_address, proxy_port = proxy_conf, DEFAULT_PROXY_PORT
 
@@ -213,28 +214,19 @@ class AproxyConfig(BaseModel):
         return ranges
 
     @classmethod
-    def _get_principal_proxy_address(cls, relation: ops.model.Relation | None) -> str:
-        """Get the principal charm's proxy address from the relation data.
+    def _get_principal_proxy_address(cls) -> str:
+        """Get proxy address from Juju-provided environment variables.
 
-        Args:
-            relation: The Juju relation to the principal charm.
+        Juju automatically exposes proxy configuration to charms as environment
+        variables (JUJU_CHARM_HTTP_PROXY, JUJU_CHARM_HTTPS_PROXY).
 
         Returns:
             The proxy address (hostname or IP) if set, else an empty string.
         """
-        proxy_conf = ""
-        if not relation:
-            return proxy_conf
+        https_proxy = os.environ.get("JUJU_HTTPS_PROXY", "")
+        http_proxy = os.environ.get("JUJU_HTTP_PROXY", "")
 
-        app_data = relation.data.get(relation.app)
-        unit_data = next(iter(relation.units), None)
-        if app_data and ("juju-https-proxy" in app_data or "juju-http-proxy" in app_data):
-            proxy_conf = app_data.get("juju-https-proxy") or app_data.get("juju-http-proxy") or ""
-        elif unit_data:
-            unit_conf = relation.data[unit_data]
-            proxy_conf = (
-                unit_conf.get("juju-https-proxy") or unit_conf.get("juju-http-proxy") or ""
-            )
+        proxy_conf = https_proxy or http_proxy or ""
 
         # Strip any leading http:// or https://
         return re.sub(r"^https?://", "", proxy_conf)
@@ -252,8 +244,6 @@ class AproxyManager:
         """
         self.config = config
         self.charm = charm
-        self.relation: ops.model.Relation
-        self.binding: ops.model.Binding
 
     # ---------------- Snap ----------------
 
@@ -317,12 +307,13 @@ class AproxyManager:
         Returns:
             The unit's bound private IP address.
         """
-        current_unit_ip = str(self.binding.network.bind_address)
+        relation, binding = self.check_relation_availability()
+        current_unit_ip = str(binding.network.bind_address)
 
         if logger.getEffectiveLevel() == logging.DEBUG:
             units_ip: list[str] = [
                 unit_data.get("private-address", "")
-                for _, unit_data in self.relation.data.items()
+                for _, unit_data in relation.data.items()
                 if unit_data.get("private-address", "")
             ]
 
@@ -382,12 +373,15 @@ class AproxyManager:
         }}
         """
 
-    def check_relation_availability(self) -> None:
+    def check_relation_availability(self) -> tuple[ops.model.Relation, ops.model.Binding]:
         """Check if the Juju relation is available for topology resolution.
 
         Raises:
             RelationMissingError: If the required relation is missing.
             TopologyUnavailableError: If the binding information is unavailable.
+
+        Returns:
+            A tuple of the relation and its binding.
         """
         relation = self.charm.model.get_relation(RELATION_NAME)
         binding = self.charm.model.get_binding(RELATION_NAME)
@@ -402,9 +396,7 @@ class AproxyManager:
                 f"Relation '{RELATION_NAME}' network not available when trying to get unit IP."
             )
 
-        # Set for later use to get primary IP
-        self.relation = relation
-        self.binding = binding
+        return relation, binding
 
     def apply_nft_config(self) -> None:
         """Apply nft config immediately.
