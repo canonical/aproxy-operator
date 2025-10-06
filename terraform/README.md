@@ -1,7 +1,6 @@
-<!-- Remember to update this file for your charm -- replace <charm_name> with the appropriate name. -->
-# <charm_name> Terraform module
+# Aproxy terraform module
 
-This folder contains a base [Terraform][Terraform] module for the <charm_name> charm.
+This folder contains a base [Terraform][Terraform] module for the aproxy charm.
 
 The module uses the [Terraform Juju provider][Terraform Juju provider] to model the charm
 deployment onto any Kubernetes environment managed by [Juju][Juju].
@@ -16,9 +15,9 @@ deployment onto any Kubernetes environment managed by [Juju][Juju].
   the Juju application name.
 - **versions.tf** - Defines the Terraform provider version.
 
-## Using <charm_name> base module in higher level modules
+## Using aproxy base module in higher level modules
 
-If you want to use `<charm_name>` base module as part of your Terraform module, import it
+If you want to use `aproxy` base module as part of your Terraform module, import it
 like shown below:
 
 ```text
@@ -26,8 +25,8 @@ data "juju_model" "my_model" {
   name = var.model
 }
 
-module "<charm_name>" {
-  source = "git::https://github.com/canonical/<charm_name>-operator//terraform"
+module "aproxy" {
+  source = "git::https://github.com/canonical/aproxy-operator//terraform"
   
   model = juju_model.my_model.name
   # (Customize configuration variables here if needed)
@@ -37,22 +36,22 @@ module "<charm_name>" {
 Create integrations, for instance:
 
 ```text
-resource "juju_integration" "<charm_name>-loki" {
+resource "juju_integration" "aproxy_to_principal" {
   model = juju_model.my_model.name
   application {
-    name     = module.<charm_name>.app_name
-    endpoint = module.<charm_name>.endpoints.logging
+    name     = module.aproxy.app_name
+    endpoint = module.aproxy.endpoints.juju_info
   }
   application {
-    name     = "loki-k8s"
-    endpoint = "logging"
+    name     = "principal-app"
+    endpoint = "juju-info"
   }
 }
 ```
 
-The complete list of available integrations can be found [in the Integrations tab][<charm_name>-integrations].
+The complete list of available integrations can be found [in the Integrations tab][aproxy-integrations].
 
 [Terraform]: https://www.terraform.io/
 [Terraform Juju provider]: https://registry.terraform.io/providers/juju/juju/latest
 [Juju]: https://juju.is
-[<charm_name>-integrations]: https://charmhub.io/<charm_name>/integrations
+[aproxy-integrations]: https://charmhub.io/aproxy/integrations

@@ -2,9 +2,15 @@
 # See LICENSE file for licensing details.
 
 variable "app_name" {
-  description = "Name of the application in the Juju model."
+  description = "Application name for aproxy."
   type        = string
-  default     = "<charm-name>"
+  default     = "aproxy"
+}
+
+variable "charm_name" {
+  description = "Charmhub charm name for aproxy."
+  type        = string
+  default     = "aproxy"
 }
 
 variable "base" {
@@ -25,31 +31,7 @@ variable "config" {
   default     = {}
 }
 
-variable "constraints" {
-  description = "Juju constraints to apply for this application."
-  type        = string
-  default     = ""
-}
-
 variable "model" {
   description = "Reference to a `juju_model`."
   type        = string
-}
-
-variable "revision" {
-  description = "Revision number of the charm"
-  type        = number
-  default     = null
-}
-
-variable "storage" {
-  description = "Map of storage used by the application."
-  type        = map(string)
-  default     = {}
-}
-
-variable "units" {
-  description = "Number of units to deploy"
-  type        = number
-  default     = 1
 }
