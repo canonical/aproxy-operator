@@ -6,9 +6,8 @@ resource "juju_application" "aproxy" {
   charm           = var.charm_name
   channel         = var.channel
   model           = var.model
-  series          = var.series
   base            = var.base
-  is_subordinate  = true
+  revision        = var.revision
 
   config          = var.config
   units           = 0
