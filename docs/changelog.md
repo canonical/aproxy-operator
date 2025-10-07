@@ -10,6 +10,6 @@ Each revision is versioned by the date of the revision.
 
 Place any unreleased changes here, that are subject to release in coming versions :).
 
-## 2025-09-16
+## 2025-10-9
 
 - Added core functionality and tests to the charm.

@@ -1,6 +1,6 @@
 # Charm architecture
 
-At its core, the aproxy subordinate charm installs and manages the aproxy snap, configures it to forward intercepted HTTP/HTTPS traffic to a target proxy, and manages nftables rules to transparently redirect outbound traffic through aproxy.
+At its core, the aproxy subordinate charm installs and manages the aproxy snap, configures it to forward intercepted TCP traffic to a target proxy, and manages nftables rules to transparently redirect outbound traffic through aproxy.
 
 The charm design is subordinate, meaning it attaches to a principal application (such as a workload needing controlled egress traffic). Unlike a sidecar charm, this subordinate runs directly on the same machine as the principal charm. It does not use Pebble or sidecar containers, because it manages system-level services (snap and nftables) instead of container workloads.
 
@@ -13,7 +13,7 @@ As a result, if you run `juju status` in a model where the aproxy charm is deplo
 
 ```bash
 Unit          Workload  Agent  Machine  Public address  Ports  Message
-aproxy/0*     active    idle   0        10.0.0.5               Aproxy interception service started.
+aproxy/0*     active    idle   0        10.0.0.5               Service ready on target proxy proxy.address:80.
 ```
 
 This shows that aproxy runs on the same unit as the principal charm.
@@ -44,11 +44,11 @@ UpdateRelStyle(aproxy, proxy, $offsetX="10")
 
 ```
 
-- The principal application generates outbound HTTP/HTTPS traffic.
+- The principal application generates outbound TCP traffic.
 
 - The aproxy subordinate charm intercepts this traffic via nftables and routes it through the aproxy snap.
 
-- The traffic is forwarded to an external target proxy server (configured via proxy-address).
+- The traffic is forwarded to an external target proxy server (configured via `proxy-address`).
 
 ## Charm architecture
 
@@ -90,6 +90,7 @@ This subordinate charm does not use containers or Pebble-managed processes. Inst
 ## Metrics
 
 To be added in the future.
+
 <!--
 If the charm uses metrics, include a list under reference/metrics.md and link that document here.
 If the charm uses containers, you may include text here like:
@@ -106,7 +107,7 @@ The charm observes the following Juju events:
 
 - `start`: Configures nftables rules and ensures interception is running.
 
-- `config-changed`: Reapplies configuration (proxy address, no-proxy list, intercepted ports).
+- `config-changed`: Reapplies configuration (proxy address, excluded addresses list, intercepted ports).
 
 - `stop`: Cleans up nftables rules and removes the snap.
 
@@ -120,15 +121,14 @@ by [Ops](https://ops.readthedocs.io/en/latest/index.html) (Python framework for 
 
 > See more in the Juju docs: [Charm](https://documentation.ubuntu.com/juju/latest/user/reference/charm/)
 
-The `__init__` method observes relevant Juju events and dispatches them to private handler methods:
+This charm uses a holistic event handling approach to manage installation, configuration, and lifecycle events through a unified handler.
+Rather than maintaining separate methods for each Juju event, the charm consolidates related logic into a single configuration flow to ensure consistency and idempotency across charm operations.
 
-- `_on_install` → installs snap.
+In the `__init__` method, the charm observes key Juju lifecycle events and maps them to corresponding handlers:
 
-- `_on_start` → applies nftables rules if configuration is valid.
+- `install`, `start`, and `config-changed` event → `_on_start_and_configure`: Handles snap installation, snap configuration, and nftables setup tasks in a unified process.
 
-- `_on_config_changed` → updates snap configuration and nftables.
-
-- `_on_stop` → removes snap and nftables rules.
+- `stop` event → `_on_stop`: Handles systemd teardown, nftables cleanup, and snap removal.
 
 For example, when a configuration changes:
 
@@ -143,7 +143,7 @@ juju config aproxy proxy-address=my-proxy.local
 3. The charm observes it:
 
 ```python
-self.framework.observe(self.on.config_changed, self._on_config_changed)
+self.framework.observe(self.on.config_changed, self._on_start_and_configure)
 ```
 
-4. `_on_config_changed` validates the configuration, sets snap options, and reapplies the nftables rules.
+4. `_on_start_and_configure` validates the configuration, sets snap options, and reapplies the nftables rules.

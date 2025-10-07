@@ -16,16 +16,16 @@ To preserve the state of the deployment, back up the following:
 
    Save the output, including:
 
-   * `proxy-address`
-   * `no-proxy`
-   * `intercept-ports`
+   - `proxy-address`
+   - `exclude-addresses-from-proxy`
+   - `intercept-ports`
 
 2. **System snapshot (optional)**
 
    If required for compliance, you can also back up system-level state:
 
-   * List of installed snaps (`snap list`)
-   * nftables configuration (`sudo nft list ruleset`)
+   - List of installed snaps (`snap list`)
+   - nftables configuration (`sudo nft list ruleset`)
 
 ## Restore
 
@@ -35,13 +35,13 @@ To restore the charm to its previous state:
 
    ```bash
    juju deploy aproxy --config proxy-address=<saved-address> \
-                      --config no-proxy=<saved-no-proxy> \
+                      --config exclude-addresses-from-proxy=<saved-exclude-addresses-from-proxy> \
                       --config intercept-ports=<saved-ports>
    ```
 
 2. **(Optional) Reapply system snapshot**
 
-   * If you captured nftables or snap state for compliance, restore them with:
+   - If you captured nftables or snap state for compliance, restore them with:
 
      ```bash
      sudo snap install aproxy --edge

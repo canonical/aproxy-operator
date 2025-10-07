@@ -1,6 +1,6 @@
 # Security overview
 
-The aproxy subordinate charm installs and manages the aproxy snap and configures nftables rules to transparently intercept outbound HTTP/HTTPS traffic and forward it through an upstream proxy. Because the charm manipulates low-level system networking and handles traffic redirection, security considerations are critical.
+The aproxy subordinate charm installs and manages the aproxy snap and configures nftables rules to transparently intercept outbound TCP traffic and forward it through an upstream proxy. Because the charm manipulates low-level system networking and handles traffic redirection, security considerations are critical.
 
 ## Risks
 
@@ -28,7 +28,7 @@ It directly invokes nftables to configure firewall and redirection rules. Incorr
 
 ### Proxy reachability
 
-The charm validates whether the configured upstream proxy (proxy-address) is reachable. If it is not, the unit enters a BlockedStatus.
+The charm validates whether the configured upstream proxy (`proxy-address`) is reachable. If it is not, the unit enters a `BlockedStatus`.
 
 If a misconfigured or malicious proxy is set, sensitive traffic could be redirected to an unintended endpoint.
 
@@ -61,7 +61,8 @@ On charm removal or stopping, the nftables rules are flushed. If the cleanup fai
 - Integrate nftables state checks into monitoring systems.
 
 ## Information security
-Data confidentiality: All outbound HTTP/HTTPS traffic is routed through aproxy to an upstream proxy. This makes the proxy a critical point for inspecting, logging, or potentially leaking sensitive data.
+
+Data confidentiality: All outbound TCP traffic is routed through aproxy to an upstream proxy. This makes the proxy a critical point for inspecting, logging, or potentially leaking sensitive data.
 
 Availability: If the upstream proxy is unavailable, the charm blocks network access by design (meaning the traffic redirection fails), which could cause outages for applications depending on outbound connectivity.
 
