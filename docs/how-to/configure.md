@@ -17,7 +17,9 @@ Example:
 juju config aproxy proxy-address="1.2.3.4:8080"
 ```
 
-## Configuration Options
+## Configuration options
+
+There are three configuration options available: `proxy-address`, `exclude-addresses-from-proxy`, and `intercept-ports`.
 
 ### `proxy-address`
 
@@ -45,7 +47,7 @@ juju config aproxy proxy-address="10.0.0.5:8080"
 Comma-separated list of IP addresses or hostnames that should bypass the proxy. When this option is set, nftables rules are updated so that outbound traffic to the specified addresses is exempted from proxy interception.
 
 - Default: `"127.0.0.1"`
-- Useful for excluding local or internal addresses that should not be proxied.
+- Useful for excluding local or internal addresses that should bypass the proxy.
 
 Usage Example:
 
@@ -59,6 +61,8 @@ Defines which ports are intercepted and forwarded through the proxy.
 
 This field supports flexible input patterns:
 
+<!-- vale Canonical.013-Spell-out-numbers-below-10 = NO -->
+
 | Type            | Example           | Description                            |
 | --------------- | ----------------- | -------------------------------------- |
 | Single port     | `80`              | Intercepts traffic on port 80          |
@@ -66,6 +70,8 @@ This field supports flexible input patterns:
 | Range           | `1024-2048`       | Intercepts all ports from 1024 to 2048 |
 | Multiple ranges | `80-90,1024-2048` | Combines ranges and specific ports     |
 | All ports       | `ALL`             | Intercepts all TCP ports (1–65536)     |
+
+<!-- vale Canonical.013-Spell-out-numbers-below-10 = YES -->
 
 - Default: `"80,443"`
 
@@ -75,7 +81,7 @@ Usage Example:
 juju config aproxy intercept-ports="80,443,8080-8090"
 ```
 
-## Example: Full Configuration
+## Example: full configuration
 
 Below is a sample configuration command that sets all options explicitly:
 
@@ -107,7 +113,7 @@ Common fixes:
 - Ensure that the `intercept-ports` field uses valid syntax (no spaces, only commas and dashes).
 - Check that your relation data is correctly set if relying on `juju-http-proxy` or `juju-https-proxy`.
 
-## Related Commands
+## Related commands
 
 - View current configuration:
 

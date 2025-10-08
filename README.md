@@ -19,6 +19,8 @@ For information about how to deploy, integrate, and manage this charm, see the O
 
 ## Get started
 
+Below is a guide on how to quickly prepare a Juju environment, deploy and relate aproxy to a principal charm, and operate the charm.
+
 ### Set up
 
 Ensure you have a working [Juju](https://documentation.ubuntu.com/juju/latest/tutorial/) environment.  

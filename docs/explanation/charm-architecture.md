@@ -128,7 +128,7 @@ In the `__init__` method, the charm observes key Juju lifecycle events and maps 
 
 - `install`, `start`, and `config-changed` event → `_on_start_and_configure`: Handles snap installation, snap configuration, and nftables setup tasks in a unified process.
 
-- `stop` event → `_on_stop`: Handles systemd teardown, nftables cleanup, and snap removal.
+- `stop` event → `_on_stop`: Handles nftables cleanup, and snap removal.
 
 For example, when a configuration changes:
 
