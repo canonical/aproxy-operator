@@ -5,9 +5,25 @@
 
 
 def pytest_addoption(parser):
-    """Parse additional pytest options.
+    """Add custom command-line options to pytest.
 
     Args:
-        parser: Pytest parser.
+        parser: The pytest command-line parser.
     """
-    parser.addoption("--charm-file", action="store")
+    parser.addoption(
+        "--charm-file",
+        action="append",
+        default=[],
+        help="Path(s) to built charm file(s) to use in tests",
+    )
+    parser.addoption(
+        "--model",
+        action="store",
+        help="Use an existing Juju model instead of creating a temporary one",
+    )
+    parser.addoption(
+        "--keep-models",
+        action="store_true",
+        default=False,
+        help="Keep Juju models around after tests instead of destroying them",
+    )
