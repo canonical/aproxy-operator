@@ -288,7 +288,7 @@ class AproxyManager:
         aproxy_snap = snap_cache[APROXY_SNAP_NAME]
 
         # Check if current config is the same as the target config
-        current_proxy = aproxy_snap.get("proxy")
+        current_proxy = aproxy_snap.get("proxy-address")
         target_proxy = f"{self.config.proxy_address}:{self.config.proxy_port}"
         if current_proxy == target_proxy:
             logger.info("Proxy is already set to %s, skipping reconfiguration", target_proxy)
