@@ -1,7 +1,7 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 # This file configures Charmcraft.
-# See https://canonical-charmcraft.readthedocs-hosted.com/stable/howto/manage-charmcraft/ 
+# See https://canonical-charmcraft.readthedocs-hosted.com/stable/howto/manage-charmcraft/
 # for guidance.
 
 type: charm
@@ -25,7 +25,7 @@ description: |
 
 base: ubuntu@24.04
 build-base: ubuntu@24.04
-platforms: 
+platforms:
   amd64:
     build-on: [amd64]
     build-for: [amd64]
@@ -48,7 +48,7 @@ config:
 
         For example: "1.2.3.4:8888" or "1.2.3.4".
         If no proxy is specified, the default proxy is the principal charm's juju-https-proxy or juju-http-proxy relation data.
-        If no port is specified, the default port value of 3128 will be used.
+        If no port is specified, the default port value of 80 will be used.
       type: string
     exclude-addresses-from-proxy:
       description: Comma-separated list of IP or hostname addresses that should bypass the proxy.

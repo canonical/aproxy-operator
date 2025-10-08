@@ -27,9 +27,7 @@ def test_install_with_proxy_config_should_succeed(patch_proxy_check):
 
     out = ctx.run(ctx.on.install(), state)
 
-    assert out.unit_status == testing.ActiveStatus(
-        "Service ready on target proxy target.proxy:3128"
-    )
+    assert out.unit_status == testing.ActiveStatus("Service ready on target proxy target.proxy:80")
 
 
 def test_install_without_proxy_config_should_fail(patch_proxy_check):
@@ -78,9 +76,7 @@ def test_start_proxy_reachable_should_succeed(patch_proxy_check):
 
     out = ctx.run(ctx.on.start(), state)
 
-    assert out.unit_status == testing.ActiveStatus(
-        "Service ready on target proxy target.proxy:3128"
-    )
+    assert out.unit_status == testing.ActiveStatus("Service ready on target proxy target.proxy:80")
 
 
 def test_start_proxy_unreachable_should_fail(patch_proxy_check):
@@ -96,7 +92,7 @@ def test_start_proxy_unreachable_should_fail(patch_proxy_check):
     out = ctx.run(ctx.on.start(), state)
 
     assert out.unit_status == testing.BlockedStatus(
-        "Failed to configure aproxy: Proxy is not reachable at target.proxy:3128"
+        "Failed to configure aproxy: Proxy is not reachable at target.proxy:80"
     )
 
 
@@ -148,7 +144,7 @@ def test_config_changed_should_succeed(patch_proxy_check):
     out = ctx.run(ctx.on.config_changed(), state)
 
     assert out.unit_status == testing.ActiveStatus(
-        "Service ready on target proxy modified.proxy:3128"
+        "Service ready on target proxy modified.proxy:80"
     )
 
 
@@ -182,7 +178,7 @@ def test_config_changed_with_unreachable_proxy_should_fail(patch_proxy_check):
     out = ctx.run(ctx.on.config_changed(), state)
 
     assert out.unit_status == testing.BlockedStatus(
-        "Failed to configure aproxy: Proxy is not reachable at modified.proxy:3128"
+        "Failed to configure aproxy: Proxy is not reachable at modified.proxy:80"
     )
 
 

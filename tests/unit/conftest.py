@@ -45,6 +45,29 @@ class FakeSnap:
         args = [f"{k}={v}" for k, v in config.items()]
         subprocess.run(["snap", "set", "aproxy"] + args, check=True)  # nosec
 
+    def get(self, key: str, default=""):
+        """Simulate getting snap configuration using subprocess.
+
+        Args:
+            key: Configuration key to retrieve.
+            default: Default value if key is not set.
+
+        Returns:
+            The value of the configuration key or default if not set.
+        """
+        if not self.present:
+            return default
+
+        result = subprocess.run(
+            ["snap", "get", "aproxy", key],
+            check=False,
+            capture_output=True,
+            text=True,
+        )  # nosec
+
+        value = result.stdout.strip() if result.stdout else default
+        return value if value else default
+
 
 @pytest.fixture(autouse=True)
 def fake_snap(monkeypatch):

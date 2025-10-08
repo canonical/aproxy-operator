@@ -36,13 +36,13 @@ from errors import (
 logger = logging.getLogger(__name__)
 
 # Files and constants
-NFT_CONF_DIR = Path("/etc/aproxy")
+NFT_CONF_DIR = Path("/opt/aproxy-charm")
 NFT_CONF_FILE = NFT_CONF_DIR / "nftables.conf"
 SYSTEMD_UNIT_PATH = Path("/etc/systemd/system/aproxy-nftables.service")
 APROXY_LISTEN_PORT = 8443
 APROXY_SNAP_NAME = "aproxy"
 APROXY_SNAP_CHANNEL = "edge"
-DEFAULT_PROXY_PORT = 3128
+DEFAULT_PROXY_PORT = 80
 RELATION_NAME = "juju-info"
 
 # ^\.?             : one leading dot allowed
@@ -55,6 +55,12 @@ HOSTNAME_PATTERN = re.compile(
     r"^\.?(?!-)(?!.*--)(?!.*-$)([a-zA-Z0-9-]{1,63}\.)*([a-zA-Z0-9-]{1,63})\.?$"
 )
 
+# ^                : start of the string
+# [a-zA-Z]         : match letter
+# [a-zA-Z0-9+\-.]* : match letters, digits, +, -, ., zero or more times
+# ://              : match literal "://"
+URI_SCHEME_PREFIX_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+\-.]*://")
+
 
 class AproxyConfig(BaseModel):
     """Configuration model for aproxy charm.
@@ -63,7 +69,7 @@ class AproxyConfig(BaseModel):
         model_config: Pydantic config to forbid extra fields.
         proxy_address: The target proxy address (hostname or IP).
         proxy_port: The target proxy port.
-        no_proxy: Comma-separated list of IPs, CIDRs, or hostnames to
+        exclude_addresses: Comma-separated list of IPs, CIDRs, or hostnames to
             exclude from interception.
         intercept_ports_list: List of ports to intercept as strings.
     """
@@ -72,7 +78,7 @@ class AproxyConfig(BaseModel):
 
     proxy_address: str
     proxy_port: int = DEFAULT_PROXY_PORT
-    no_proxy: List[str] = []
+    exclude_addresses: List[str] = []
     intercept_ports_list: List[str]
 
     @classmethod
@@ -106,10 +112,12 @@ class AproxyConfig(BaseModel):
                 ) from exc
 
         # Parse no proxy list
-        no_proxy = []
-        raw_no_proxy = str(conf.get("exclude-addresses-from-proxy", ""))
-        if raw_no_proxy:
-            no_proxy = [entry.strip() for entry in raw_no_proxy.split(",") if entry.strip()]
+        exclude_addresses = []
+        raw_exclude_addresses = str(conf.get("exclude-addresses-from-proxy", ""))
+        if raw_exclude_addresses:
+            exclude_addresses = [
+                entry.strip() for entry in raw_exclude_addresses.split(",") if entry.strip()
+            ]
 
         # Parse intercept ports
         intercept_ports_raw = str(conf.get("intercept-ports", ""))
@@ -120,7 +128,7 @@ class AproxyConfig(BaseModel):
             return cls(
                 proxy_address=proxy_address,
                 proxy_port=proxy_port,
-                no_proxy=no_proxy,
+                exclude_addresses=exclude_addresses,
                 intercept_ports_list=intercept_ports_list,
             )
         except ValidationError as exc:
@@ -146,25 +154,25 @@ class AproxyConfig(BaseModel):
             raise ValueError(f"proxy port must be between 1 and 65535 instead of {proxy_port}")
         return proxy_port
 
-    @field_validator("no_proxy")
-    def _validate_no_proxy(cls, no_proxy: List[str]) -> List[str]:
-        """Validate no_proxy entries are valid IPs, CIDRs, or hostnames."""
-        valid_no_proxy = []
-        for entry in no_proxy:
+    @field_validator("exclude_addresses")
+    def _validate_exclude_addresses(cls, exclude_addresses: List[str]) -> List[str]:
+        """Validate exclude_addresses entries are valid IPs, CIDRs, or hostnames."""
+        valid_exclude_addresses = []
+        for entry in exclude_addresses:
             entry = entry.strip()
             if not entry:
                 continue
             try:
                 # Check if it's a valid IP or CIDR
                 ipaddress.ip_network(entry, strict=False)
-                valid_no_proxy.append(entry)
+                valid_exclude_addresses.append(entry)
             except ValueError as exc:
                 # If not an IP/CIDR, check if it's a valid hostname
                 if HOSTNAME_PATTERN.match(entry):
-                    valid_no_proxy.append(entry)
+                    valid_exclude_addresses.append(entry)
                 else:
-                    raise ValueError(f"invalid no_proxy entry {entry}") from exc
-        return valid_no_proxy
+                    raise ValueError(f"invalid exclude_addresses entry {entry}") from exc
+        return valid_exclude_addresses
 
     @field_validator("intercept_ports_list")
     def _validate_and_merge_ports(cls, ports: List[str]) -> List[str]:
@@ -228,8 +236,8 @@ class AproxyConfig(BaseModel):
 
         proxy_conf = https_proxy or http_proxy or ""
 
-        # Strip any leading http:// or https://
-        return re.sub(r"^https?://", "", proxy_conf)
+        # Strip prefix like http://, https://, socks5h://, ftp://, etc.
+        return URI_SCHEME_PREFIX_RE.sub("", proxy_conf)
 
 
 class AproxyManager:
@@ -276,14 +284,23 @@ class AproxyManager:
         Raises:
             ConnectionError: If the target proxy is not reachable.
         """
+        snap_cache = snap.SnapCache()
+        aproxy_snap = snap_cache[APROXY_SNAP_NAME]
+
+        # Check if current config is the same as the target config
+        current_proxy = aproxy_snap.get("proxy")
         target_proxy = f"{self.config.proxy_address}:{self.config.proxy_port}"
+        if current_proxy == target_proxy:
+            logger.info("Proxy is already set to %s, skipping reconfiguration", target_proxy)
+            return
+
+        # Check if target proxy is reachable
         if not self._is_proxy_reachable(self.config.proxy_address, self.config.proxy_port):
             logger.error("Proxy is not reachable at %s", target_proxy)
             raise ConnectionError(f"Proxy is not reachable at {target_proxy}")
 
         logger.info("Configuring snap: proxy=%s", target_proxy)
-        snap_cache = snap.SnapCache()
-        snap_cache[APROXY_SNAP_NAME].set({"proxy": target_proxy})
+        aproxy_snap.set({"proxy": target_proxy})
 
     def _is_proxy_reachable(self, host: str, port: int = DEFAULT_PROXY_PORT) -> bool:
         """Check if the target proxy is reachable on the specified port.
@@ -342,7 +359,7 @@ class AproxyManager:
             [
                 "127.0.0.0/8",  # private loopback range
             ]
-            + self.config.no_proxy
+            + self.config.exclude_addresses
         )
 
         return f"""#!/usr/sbin/nft -f
