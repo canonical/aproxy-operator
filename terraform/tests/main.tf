@@ -29,7 +29,7 @@ module "aproxy" {
   app_name = "aproxy"
   channel  = var.channel
   revision = var.revision
-  model    = "prod-aproxy-example"
+  model    = "test-aproxy-example"
   config = {
     proxy-address = "127.0.0.1:80"
   }
