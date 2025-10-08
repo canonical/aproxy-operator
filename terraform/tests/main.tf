@@ -13,12 +13,6 @@ variable "revision" {
   default     = null
 }
 
-variable "model" {
-  description = "The Juju model name to use for the test deployment."
-  type        = string
-  default     = "test-aproxy-model"
-}
-
 terraform {
   required_providers {
     juju = {
