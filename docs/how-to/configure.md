@@ -14,7 +14,7 @@ These configurations can be applied:
 Example:
 
 ```bash
-juju config aproxy proxy-address="1.2.3.4:8080"
+juju deploy aproxy --config proxy-address="1.2.3.4:8080"
 ```
 
 ## Configuration options
@@ -49,7 +49,7 @@ Comma-separated list of IP addresses or hostnames that should bypass the proxy. 
 - Default: `"127.0.0.1"`
 - Useful for excluding local or internal addresses that should bypass the proxy.
 
-Usage Example:
+Usage example:
 
 ```bash
 juju config aproxy exclude-addresses-from-proxy="127.0.0.1,example.local"
@@ -75,7 +75,7 @@ This field supports flexible input patterns:
 
 - Default: `"80,443"`
 
-Usage Example:
+Usage example:
 
 ```bash
 juju config aproxy intercept-ports="80,443,8080-8090"
@@ -99,7 +99,7 @@ After applying the configuration, the charm will:
 3. Apply nftables rules to redirect outbound traffic as specified.
 4. Report an `ActiveStatus` once setup completes successfully.
 
-## Troubleshooting
+## Troubleshoot
 
 If the configuration is invalid or incomplete, the charm may enter a `BlockedStatus` with an error message such as:
 
@@ -111,7 +111,7 @@ Common fixes:
 
 - Verify that the `proxy-address` and `exclude-addresses-from-proxy` consist of valid IP or hostname.
 - Ensure that the `intercept-ports` field uses valid syntax (no spaces, only commas and dashes).
-- Check that your relation data is correctly set if relying on `juju-http-proxy` or `juju-https-proxy`.
+- Check that your relation data is correctly set if you're relying on `juju-http-proxy` or `juju-https-proxy`.
 
 ## Related commands
 
