@@ -1,7 +1,7 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# pylint: disable=duplicate-code,missing-function-docstring,unused-argument
+# pylint: disable=unused-argument
 """Unit tests for Aproxy subordinate charm."""
 
 # nosec B404: subprocess usage is intentional and safe (predefined executables only).
@@ -11,132 +11,48 @@ import pytest
 from ops import testing
 from scenario.errors import UncaughtCharmError
 
+from aproxy import NFT_CONF_FILE
 from charm import AproxyCharm
 
 
-@pytest.fixture(autouse=True)
-def _patch_subprocess_success(monkeypatch):
-    """Patch subprocess.run to always succeed.
-
-    Arg:
-        monkeypatch: pytest fixture to patch functions.
-    """
-
-    def fake_run(cmd, *a, **k):
-        """Return fake subprocess.run that always succeeds.
-
-        Args:
-            cmd: Command to run.
-            a: Additional positional arguments.
-            k: Additional keyword arguments.
-
-        Returns:
-            subprocess.CompletedProcess: Simulated successful command execution.
-        """
-        return subprocess.CompletedProcess(cmd, 0)
-
-    monkeypatch.setattr("subprocess.run", fake_run)
-
-
-@pytest.fixture(name="patch_subprocess_failure")
-def _patch_subprocess_failure(monkeypatch):
-    """Patch subprocess.run to simulate failures based on flags.
-
-    Arg:
-        monkeypatch: pytest fixture to patch functions.
-    """
-
-    def _do_patch(
-        is_install_failure: bool = False,
-        is_set_failure: bool = False,
-        is_nft_failure: bool = False,
-        is_remove_failure: bool = False,
-    ):
-        """Patch subprocess.run to simulate failures.
-
-        Args:
-            is_install_failure: Simulate snap install failure if True.
-            is_set_failure: Simulate snap set failure if True.
-            is_nft_failure: Simulate nftables command failure if True.
-            is_remove_failure: Simulate snap remove failure if True.
-        """
-
-        def fake_run(cmd, *a, **k):
-            """Return fake subprocess.run that simulates failures based on flags.
-
-            Args:
-                cmd: Command to run.
-                a: Additional positional arguments.
-                k: Additional keyword arguments.
-
-            Raises:
-                CalledProcessError: If simulating a failure for the command.
-
-            Returns:
-                subprocess.CompletedProcess: Simulated successful command execution if no failure.
-            """
-            if is_install_failure and cmd[:3] == ["snap", "install", "aproxy"]:
-                raise subprocess.CalledProcessError(1, cmd)
-            if is_set_failure and cmd[:3] == ["snap", "set", "aproxy"]:
-                raise subprocess.CalledProcessError(1, cmd)
-            if is_nft_failure and cmd[0] == "nft":
-                raise subprocess.CalledProcessError(1, cmd)
-            if is_remove_failure and cmd[:3] == ["snap", "remove", "aproxy"]:
-                raise subprocess.CalledProcessError(1, cmd)
-            return subprocess.CompletedProcess(cmd, 0)
-
-        monkeypatch.setattr("subprocess.run", fake_run)
-
-    return _do_patch
-
-
-@pytest.fixture(name="patch_proxy_check")
-def _patch_proxy_check(monkeypatch):
-    """Patch _is_proxy_reachable to return a specified value."""
-
-    def _do_patch(is_reachable: bool = True):
-        """Patch _is_proxy_reachable to return the specified value."""
-        monkeypatch.setattr(
-            "charm.AproxyCharm._is_proxy_reachable",
-            lambda *a, **k: is_reachable,
-        )
-
-    return _do_patch
-
-
-def test_install_with_proxy_config_should_succeed():
+def test_install_with_proxy_config_should_succeed(patch_proxy_check):
     """
     arrange: declare a context and input state with proxy config.
     act: run the install event.
-    assert: status is active with a message indicating successful snap installation.
+    assert: status is active with a message indicating the interception service started.
     """
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={"proxy-address": "target.proxy"})
+    patch_proxy_check(is_reachable=True)
 
     out = ctx.run(ctx.on.install(), state)
 
-    assert out.unit_status == testing.ActiveStatus("Aproxy snap successfully installed.")
+    assert out.unit_status == testing.ActiveStatus("Service ready on target proxy target.proxy:80")
 
 
-def test_install_without_proxy_config_should_fail():
+def test_install_without_proxy_config_should_fail(patch_proxy_check):
     """
     arrange: declare a context and input state without proxy config.
     act: run the install event.
-    assert: status is blocked with a message indicating missing proxy address in config.
+    assert: status is blocked with a message indicating invalid configuration.
     """
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={})
+    patch_proxy_check(is_reachable=True)
 
     out = ctx.run(ctx.on.install(), state)
 
-    assert out.unit_status == testing.BlockedStatus("Missing target proxy address in config.")
+    assert out.unit_status == testing.BlockedStatus(
+        "Invalid charm configuration: proxy_address: "
+        + "Value error, target proxy address is required to be non-empty string"
+    )
 
 
 def test_install_with_snap_install_failure_should_fail(patch_subprocess_failure):
     """
     arrange: declare a context, input state with proxy config, and simulate snap install failure.
     act: run the install event.
-    assert: CalledProcessError is raised.
+    assert: CalledProcessError should be thrown.
     """
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={"proxy-address": "target.proxy"})
@@ -160,7 +76,7 @@ def test_start_proxy_reachable_should_succeed(patch_proxy_check):
 
     out = ctx.run(ctx.on.start(), state)
 
-    assert out.unit_status == testing.ActiveStatus("Aproxy interception service started.")
+    assert out.unit_status == testing.ActiveStatus("Service ready on target proxy target.proxy:80")
 
 
 def test_start_proxy_unreachable_should_fail(patch_proxy_check):
@@ -176,7 +92,7 @@ def test_start_proxy_unreachable_should_fail(patch_proxy_check):
     out = ctx.run(ctx.on.start(), state)
 
     assert out.unit_status == testing.BlockedStatus(
-        "Target proxy is unreachable at target.proxy:3128."
+        "Failed to configure aproxy: Proxy is not reachable at target.proxy:80"
     )
 
 
@@ -184,32 +100,35 @@ def test_start_proxy_snap_config_failure_should_fail(patch_proxy_check, patch_su
     """
     arrange: declare a context, input state with proxy config, and simulate snap config failure.
     act: run the start event.
-    assert: status is blocked with a message indicating snap config failure.
+    assert: CalledProcessError should be thrown.
     """
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={"proxy-address": "target.proxy"})
     patch_proxy_check(is_reachable=True)
     patch_subprocess_failure(is_set_failure=True)
 
-    out = ctx.run(ctx.on.start(), state)
+    with pytest.raises(UncaughtCharmError) as excinfo:
+        ctx.run(ctx.on.start(), state)
 
-    assert out.unit_status == testing.BlockedStatus("Failed to configure aproxy snap.")
+    assert isinstance(excinfo.value.__cause__, subprocess.CalledProcessError)
 
 
-def test_start_nftables_failure_should_fail(patch_proxy_check, patch_subprocess_failure):
+def test_start_nftables_failure_should_fail(patch_proxy_check, patch_aproxy_nft_failure):
     """
     arrange: declare a context, input state with proxy config, and simulate nftables failure.
     act: run the start event.
-    assert: status is blocked with a message indicating nftables config failure.
+    assert: status is blocked with a message indicating nft configuration failure.
     """
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={"proxy-address": "target.proxy"})
     patch_proxy_check(is_reachable=True)
-    patch_subprocess_failure(is_nft_failure=True)
+    patch_aproxy_nft_failure(is_apply_failure=True)
 
     out = ctx.run(ctx.on.start(), state)
 
-    assert out.unit_status == testing.BlockedStatus("Failed to configure nftables.")
+    assert out.unit_status == testing.BlockedStatus(
+        f"Failed to apply nft configuration from {NFT_CONF_FILE}"
+    )
 
 
 def test_config_changed_should_succeed(patch_proxy_check):
@@ -224,21 +143,26 @@ def test_config_changed_should_succeed(patch_proxy_check):
 
     out = ctx.run(ctx.on.config_changed(), state)
 
-    assert out.unit_status == testing.ActiveStatus("Proxy reconfigured and interception enabled.")
+    assert out.unit_status == testing.ActiveStatus(
+        "Service ready on target proxy modified.proxy:80"
+    )
 
 
 def test_config_changed_without_proxy_config_should_fail():
     """
     arrange: declare a context and input state without proxy config.
     act: run the config_changed event.
-    assert: status is blocked with a message indicating missing proxy address in config.
+    assert: status is blocked with a message indicating invalid configuration.
     """
     ctx = testing.Context(AproxyCharm)
     state = testing.State(config={})
 
     out = ctx.run(ctx.on.config_changed(), state)
 
-    assert out.unit_status == testing.BlockedStatus("Missing target proxy address in config.")
+    assert out.unit_status == testing.BlockedStatus(
+        "Invalid charm configuration: proxy_address: "
+        + "Value error, target proxy address is required to be non-empty string"
+    )
 
 
 def test_config_changed_with_unreachable_proxy_should_fail(patch_proxy_check):
@@ -254,7 +178,7 @@ def test_config_changed_with_unreachable_proxy_should_fail(patch_proxy_check):
     out = ctx.run(ctx.on.config_changed(), state)
 
     assert out.unit_status == testing.BlockedStatus(
-        "Target proxy is unreachable at modified.proxy:3128."
+        "Failed to configure aproxy: Proxy is not reachable at modified.proxy:80"
     )
 
 
@@ -265,38 +189,42 @@ def test_stop_should_succeed():
     assert: status is active with a message indicating the interception service stopped.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State()
+    state = testing.State(config={"proxy-address": "target.proxy"})
 
     out = ctx.run(ctx.on.stop(), state)
 
-    assert out.unit_status == testing.ActiveStatus("Aproxy interception service stopped.")
+    assert out.unit_status == testing.MaintenanceStatus("Aproxy interception service stopped.")
 
 
-def test_stop_with_nftables_cleanup_failure_should_fail(patch_subprocess_failure):
+def test_stop_with_nftables_cleanup_failure_should_succeed(patch_aproxy_nft_failure, caplog):
     """
     arrange: declare a context, input state, and simulate nftables cleanup failure.
     act: run the stop event.
-    assert: status is blocked with a message indicating nftables cleanup failure.
+    assert: status is active with a log message indicating nftables cleanup failure.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State()
-    patch_subprocess_failure(is_nft_failure=True)
+    state = testing.State(config={"proxy-address": "target.proxy"})
+    patch_aproxy_nft_failure(is_cleanup_failure=True)
+    caplog.set_level("ERROR")
 
     out = ctx.run(ctx.on.stop(), state)
 
-    assert out.unit_status == testing.BlockedStatus("Failed to clean up nftables rules.")
+    assert out.unit_status == testing.MaintenanceStatus("Aproxy interception service stopped.")
+    assert "Failed to clean up aproxy or nftables" in caplog.text
 
 
-def test_stop_with_snap_removal_failure_should_fail(patch_subprocess_failure):
+def test_stop_with_snap_removal_failure_should_succeed(patch_subprocess_failure, caplog):
     """
     arrange: declare a context, input state, and simulate snap removal failure.
     act: run the stop event.
-    assert: status is blocked with a message indicating snap removal failure.
+    assert: status is active with a log message indicating snap removal failure.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State()
+    state = testing.State(config={"proxy-address": "target.proxy"})
     patch_subprocess_failure(is_remove_failure=True)
+    caplog.set_level("ERROR")
 
     out = ctx.run(ctx.on.stop(), state)
 
-    assert out.unit_status == testing.BlockedStatus("Failed to remove aproxy snap.")
+    assert out.unit_status == testing.MaintenanceStatus("Aproxy interception service stopped.")
+    assert "Failed to clean up aproxy or nftables" in caplog.text

@@ -1,7 +1,7 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 # This file configures Charmcraft.
-# See https://canonical-charmcraft.readthedocs-hosted.com/stable/howto/manage-charmcraft/ 
+# See https://canonical-charmcraft.readthedocs-hosted.com/stable/howto/manage-charmcraft/
 # for guidance.
 
 type: charm
@@ -17,7 +17,7 @@ links:
 
 description: |
   The Aproxy subordinate charm installs and manages the aproxy snap to transparently
-  intercept per-unit HTTP/HTTPS traffic and forward it to a target proxy, while preserving
+  intercept any per-unit TCP traffic and forward it to a target proxy, while preserving
   the original hostname.
 
   This charm is useful in environments that require transparent proxying for compliance,
@@ -25,41 +25,44 @@ description: |
 
 base: ubuntu@24.04
 build-base: ubuntu@24.04
-platforms: 
+platforms:
   amd64:
     build-on: [amd64]
     build-for: [amd64]
 
 requires:
-  aproxy:
-    interface: aproxy
+  juju-info:
+    interface: juju-info
     scope: container
 
 parts:
   charm:
     plugin: charm
     source: .
-    charm-entrypoint: src/charm.py
-    charm-binary-python-packages: []
-    charm-python-packages: []
-    charm-requirements: [requirements.txt]
-    charm-strict-dependencies: false
 
-# See https://documentation.ubuntu.com/charmcraft/stable/reference/files/charmcraft-yaml-file/
-# for guidance.
 config:
   options:
     proxy-address:
-      description: Configures the target proxy IP address for traffic forwarding.
+      description: |
+        Configures the target proxy IP address and port for traffic forwarding.
+
+        For example: "1.2.3.4:8888" or "1.2.3.4".
+        If no proxy is specified, the default proxy is the principal charm's juju-https-proxy or juju-http-proxy relation data.
+        If no port is specified, the default port value of 80 will be used.
       type: string
-    no-proxy:
-      description: Comma-separated list of IP addresses that should bypass the proxy.
+    exclude-addresses-from-proxy:
+      description: Comma-separated list of IP or hostname addresses that should bypass the proxy.
       default: "127.0.0.1"
       type: string
     intercept-ports:
       description: |
         Comma-separated list of ports to intercept and forward through the proxy.
 
-        Support ranges (ex: "1024-35655"), the keyword “ALL”, or multiple ranges (ex: "80-90,1024-2048")
+        Support:
+        - Single port e.g., 80
+        - List of comma-separated ports e.g., 80,443
+        - Range (both sides included) e.g., 1024-2048
+        - List of ranges e.g. 80-90,1024-2048
+        - Keyword "ALL" which corresponds to the range 1-65536
       default: "80,443"
       type: string

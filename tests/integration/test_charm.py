@@ -5,40 +5,49 @@
 
 """Integration tests."""
 
-import logging
-from pathlib import Path
-
-import pytest
-import yaml
-from pytest_operator.plugin import OpsTest
-
-logger = logging.getLogger(__name__)
-
-CHARMCRAFT_DATA = yaml.safe_load(Path("./charmcraft.yaml").read_text(encoding="utf-8"))
-APP_NAME = CHARMCRAFT_DATA["name"]
-PRINCIPAL = "wordpress"
+import jubilant
 
 
-@pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, pytestconfig: pytest.Config):
-    """Build the charm and deploy it with a principal application."""
-    # Build the charm
-    charm = await ops_test.build_charm(".")
-    await ops_test.model.deploy(charm, application_name=APP_NAME)
+def test_aproxy_active(juju, aproxy_app):
+    """
+    arrange: deploy aproxy subordinate charm on ubuntu.
+    act: wait for units to settle.
+    assert: aproxy subordinate reaches active status.
+    """
+    juju.wait(jubilant.all_active, timeout=10 * 60)
+    units = juju.status().get_units(aproxy_app.name)
+    assert all(u.workload_status.current == "active" for u in units.values())
 
-    # Deploy a principal application to relate with
-    await ops_test.model.deploy("wordpress", application_name=PRINCIPAL, channel="stable")
-    await ops_test.model.add_relation(APP_NAME, PRINCIPAL)
 
-    # Wait for both applications to be active
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME, PRINCIPAL],
-        status="active",
-        timeout=1000,
-        raise_on_blocked=True,
-    )
+def test_traffic_routed_through_aproxy(juju, principal_app):
+    """
+    arrange: ubuntu with aproxy subordinate and tinyproxy running.
+    act: start a local HTTP server inside the ubuntu unit, then curl it.
+    assert: request succeeds via aproxy interception.
+    """
+    juju.wait(jubilant.all_active, timeout=5 * 60)
 
-    aproxy_app = ops_test.model.applications[APP_NAME]
-    for unit in aproxy_app.units:
-        assert unit.workload_status == "active"
-        assert unit.workload_status_message == "Aproxy interception service started."
+    # Start a simple HTTP server on port 8080 inside ubuntu
+    # (runs in the background so we can curl it)
+    principal_app.ssh("nohup python3 -m http.server 8080 > /tmp/http.log 2>&1 &")
+
+    # Curl the server address from inside ubuntu — intercepted by aproxy
+    units = juju.status().get_units(principal_app.name)
+    leader = next(name for name, u in units.items() if u.leader)
+    ip = units[leader].address or units[leader].public_address
+    result = principal_app.ssh(f"curl -s -o /dev/null -w '%{{http_code}}' http://{ip}:8080")
+
+    assert result.strip() == "200", f"Expected 200 from local server, got {result}"
+
+
+def test_cleanup_on_removal(juju, aproxy_app, principal_app):
+    """
+    arrange: ubuntu with aproxy subordinate.
+    act: remove aproxy charm.
+    assert: no leftover proxy env vars on principal unit.
+    """
+    juju.remove_application(aproxy_app.name)
+    juju.wait(jubilant.all_active, timeout=10 * 60)
+
+    stdout = principal_app.ssh("env | grep -i proxy || true")
+    assert stdout.strip() == ""
