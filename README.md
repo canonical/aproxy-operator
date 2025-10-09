@@ -4,8 +4,10 @@
 
 <!-- vale Canonical.007-Headings-sentence-case = YES -->
 
-[![Charmhub](https://charmhub.io/aproxy/badge.svg)](https://charmhub.io/aproxy)
-[![CI](https://github.com/canonical/aproxy-operator/actions/workflows/ci.yaml/badge.svg)](https://github.com/canonical/aproxy-operator/actions)
+[![CharmHub Badge](https://charmhub.io/aproxy/badge.svg)](https://charmhub.io/aproxy)
+[![Publish to edge](https://github.com/canonical/aproxy-operator/actions/workflows/publish_charm.yaml/badge.svg)](https://github.com/canonical/aproxy-operator/actions/workflows/publish_charm.yaml)
+[![Promote charm](https://github.com/canonical/aproxy-operator/actions/workflows/promote_charm.yaml/badge.svg)](https://github.com/canonical/aproxy-operator/actions/workflows/promote_charm.yaml)
+[![Discourse Status](https://img.shields.io/discourse/status?server=https%3A%2F%2Fdiscourse.charmhub.io&style=flat&label=CharmHub%20Discourse)](https://discourse.charmhub.io)
 
 A subordinate charm that transparently intercepts per-unit TCP traffic and forwards it to a target proxy. It deployes the [Aproxy](https://snapcraft.io/aproxy) snap application.
 
