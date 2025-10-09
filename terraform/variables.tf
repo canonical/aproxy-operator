@@ -41,3 +41,9 @@ variable "revision" {
   type        = number
   default     = null
 }
+
+variable "units" {
+  description = "Number of units to deploy"
+  type        = number
+  default     = 1
+}

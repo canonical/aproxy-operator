@@ -12,5 +12,5 @@ resource "juju_application" "aproxy" {
 
   model  = var.model
   config = var.config
-  units  = 0
+  units  = var.units
 }
