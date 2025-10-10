@@ -66,7 +66,7 @@ jobs:
       - name: Wait for Juju model to become active
         run: |
           echo "Waiting for model to be active..."
-          juju wait -m test-aproxy-example --timeout 10m
+          juju wait-for application aproxy --query='status=="active" || status=="idle"' --timeout=10m
 
       - name: Verify aproxy application is active
         run: |
