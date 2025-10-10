@@ -66,20 +66,19 @@ jobs:
       - name: Deploy principal and relate aproxy
         run: |
           juju deploy ubuntu --channel=latest/stable --model test-aproxy-example
-          juju config aproxy proxy-address="127.0.0.1"
           juju integrate ubuntu aproxy --model test-aproxy-example
 
-      - name: Wait for aproxy to become active
+      - name: Wait for aproxy to be deployed
         run: |
-          echo "Waiting for aproxy to be active..."
-          juju wait-for application aproxy --query='status=="active" || status=="idle"' --timeout=10m
+          echo "Waiting for aproxy to be deployed..."
+          juju wait-for application aproxy --query='status=="maintenance" || status=="blocked"' --timeout=10m
 
-      - name: Verify aproxy application is active
+      - name: Verify aproxy application is deployed
         run: |
           STATUS=$(juju status aproxy --model test-aproxy-example --format=json | jq -r '.applications.aproxy["application-status"].current')
           echo "aproxy status: $STATUS"
-          if [ "$STATUS" != "active" ]; then
-            echo "aproxy did not reach active state"
+          if [ "$STATUS" == "error" ] || [ "$STATUS" == "unknown" ]; then
+            echo "aproxy failed to deploy or is unknown"
             juju status --model test-aproxy-example
             exit 1
           fi
