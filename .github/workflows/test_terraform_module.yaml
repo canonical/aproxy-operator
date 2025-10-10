@@ -66,6 +66,7 @@ jobs:
       - name: Deploy principal and relate aproxy
         run: |
           juju deploy ubuntu --channel=latest/stable --model test-aproxy-example
+          juju config aproxy proxy-address="127.0.0.1"
           juju integrate ubuntu aproxy --model test-aproxy-example
 
       - name: Wait for aproxy to become active
