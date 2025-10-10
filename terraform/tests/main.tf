@@ -16,7 +16,7 @@ variable "revision" {
 terraform {
   required_providers {
     juju = {
-      version = "~> 0.20.0"
+      version = "~> 0.23.0"
       source  = "juju/juju"
     }
   }
@@ -24,10 +24,23 @@ terraform {
 
 provider "juju" {}
 
-module "charm_name" {
+module "aproxy" {
   source   = "./.."
-  app_name = "charm_name"
+  app_name = "aproxy"
   channel  = var.channel
-  model    = "prod-charm_name-example"
   revision = var.revision
+  model    = "test-aproxy-example"
+  config = {
+    proxy-address = "127.0.0.1:80"
+  }
+}
+
+output "app_name" {
+  description = "The name of the deployed aproxy charm application."
+  value       = module.aproxy.app_name
+}
+
+output "endpoints" {
+  description = "Integration endpoints exposed by aproxy charm."
+  value       = module.aproxy.endpoints
 }
