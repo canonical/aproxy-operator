@@ -63,9 +63,9 @@ jobs:
         run: terraform apply -auto-approve
         working-directory: ${{ env.WORKING_DIR }}
 
-      - name: Wait for Juju model to become active
+      - name: Wait for aproxy to become active
         run: |
-          echo "Waiting for model to be active..."
+          echo "Waiting for aproxy to be active..."
           juju wait-for application aproxy --query='status=="active" || status=="idle"' --timeout=10m
 
       - name: Verify aproxy application is active
