@@ -1,80 +1,95 @@
 # Charm architecture
 
-Add overview material here:
+At its core, the aproxy subordinate charm installs and manages the aproxy snap, configures it to forward intercepted TCP traffic to a target proxy, and manages nftables rules to transparently redirect outbound traffic through aproxy.
 
-1. What kind of application is it? What kind of software does it use?
-2. Describe Pebble services.
+The charm design is subordinate, meaning it attaches to a principal application (such as a workload needing controlled egress traffic). Unlike a sidecar charm, this subordinate runs directly on the same machine as the principal charm. It does not use Pebble or sidecar containers, because it manages system-level services (snap and nftables) instead of container workloads.
 
-<!-- Example text
-At its core, the <charm-name> charm is <software> that does <brief description>.
+The charm relies on:
 
-The charm design leverages the [sidecar](https://kubernetes.io/blog/2015/06/the-distributed-system-toolkit-patterns/#example-1-sidecar-containers) pattern to allow multiple containers in each pod with [Pebble](https://documentation.ubuntu.com/juju/3.6/reference/pebble/) running as the workload container’s entrypoint.
+- Snap service management for the aproxy snap.
+- nftables rules dynamically configured by the charm to enforce transparent proxy.
 
-Pebble is a lightweight, API-driven process supervisor that is responsible for configuring processes to run in a container and controlling those processes throughout the workload lifecycle.
-
-Pebble `services` are configured through [layers](https://github.com/canonical/pebble#layer-specification), and the following containers represent each one a layer forming the effective Pebble configuration, or `plan`:
-
-1. Container 1, which does this and that.
-2. Container 2, which does that and this.
-3. And so on.
-
-
-As a result, if you run a `kubectl get pods` on a namespace named for the Juju model you've deployed the <charm-name> charm into, you'll see something like the following:
+As a result, if you run `juju status` in a model where the aproxy charm is deployed, you’ll see something like:
 
 ```bash
-NAME                             READY   STATUS    RESTARTS   AGE
-<charm-name>-0                   N/N     Running   0         6h4m
+Unit          Workload  Agent  Machine  Public address  Ports  Message
+aproxy/0*     active    idle   0        10.0.0.5               Service ready on target proxy proxy.address:80.
 ```
 
-This shows there are <NUMBER> containers - <describe what the containers are>.
--->
+This shows that aproxy runs on the same unit as the principal charm.
 
-## High-level overview of <charm-name> deployment
+## High-level overview of aproxy deployment
 
-The following diagram shows a typical deployment of the <charm-name> charm.
-<!-- 
-    Provide a brief description of the deployment here. Is it a Kubernetes cloud, a VM, or both?
-    What other charms are included in this deployment? 
--->
+The following diagram shows a typical deployment of the aproxy subordinate charm:
 
-<!-- Include a Mermaid diagram of the charm deployment here. 
-     Use one container per charm; the point of this high-level overview is to show
-     a typical deployment and not provide a detailed breakdown of any of the charms.
-     Provide a brief description of the relations (for instance, "provides connection",
-     "caches storage", or "provides database"). More information on how to create mermaid diagrams
-     can be found in https://canonical-platform-engineering.readthedocs-hosted.com/en/latest/engineering-practices/documentation/architecture-diagram-guidance/
--->
+```mermaid
+C4Context
+title System Context diagram for aproxy subordinate charm
+
+Person(dev, "Developer / Operator", "Deploys and manages applications with Juju")
+
+System_Ext(proxy, "Upstream Proxy", "Trusted proxy server that receives forwarded HTTP/HTTPS traffic")
+
+System_Boundary(b0, "Host VM or Container") {
+    System(principal, "Principal Application", "e.g., web app, API service, or database")
+    System(aproxy, "aproxy Subordinate Charm", "Intercepts outbound traffic via nftables and forwards to upstream proxy")
+}
+
+Rel(dev, principal, "Deploys and configures via Juju")
+Rel(principal, aproxy, "Co-locates and intercepts outbound traffic")
+Rel(aproxy, proxy, "Forwards proxied traffic")
+UpdateRelStyle(dev, principal, $offsetY="-20", $offsetX="5")
+UpdateRelStyle(principal, aproxy, $offsetY="30", $offsetX="-20")
+UpdateRelStyle(aproxy, proxy, $offsetX="10")
+
+```
+
+- The principal application generates outbound TCP traffic.
+
+- The aproxy subordinate charm intercepts this traffic via nftables and routes it through the aproxy snap.
+
+- The traffic is forwarded to an external target proxy server (configured via `proxy-address`).
 
 ## Charm architecture
 
-The following diagram shows the architecture of the <charm-name> charm:
+The following diagram shows the architecture of the aproxy charm:
 
-<!-- Include a Mermaid diagram of the charm here. 
-     Limit the scope of this diagram to the charm only.
-     How is the charm containerized? Include those separate pieces in this diagram.
--->
+```mermaid
+C4Component
+title Component diagram for aproxy subordinate charm
+UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="2")
+
+System_Boundary(b1, "aproxy Subordinate Charm (machine charm)") {
+    Component(charm, "Charm logic", "Python (ops framework)", "Handles Juju events and manages system state")
+    Component(snap, "aproxy snap", "Snap package", "Provides local proxy listener on 127.0.0.1:8443")
+    Component(nft, "nftables rules", "nftables", "Redirects outbound traffic to the aproxy listener")
+}
+
+System_Ext(upstream, "Target Proxy Server", "External proxy configured via charm settings")
+
+Rel(charm, snap, "Installs and configures")
+Rel(charm, nft, "Applies rules")
+Rel(nft, snap, "Intercept TCP connections")
+Rel(snap, upstream, "Forwards traffic to upstream proxy")
+UpdateRelStyle(charm, snap, $offsetY="-20", $offsetX="-40")
+UpdateRelStyle(charm, nft, $offsetX="10")
+UpdateRelStyle(snap, upstream, $offsetY="-30", $offsetX="10")
+
+```
+
+- The charm code (`charm.py`) observes Juju lifecycle events and configures both the snap and nftables.
+
+- The aproxy snap provides the actual proxy functionality, listening on `127.0.0.1:8443`.
+
+- nftables rules transparently intercept outbound traffic on configured ports and redirect it to the snap.
 
 ### Containers
 
-Configuration files for the containers can be found in the respective directories that define the rock.
-
-<!--
-#### Container example
-
-Description of container.
-
-The workload that this container is running is defined in the [<container-name> rock](link to rock).
--->
-
-## OCI images
-
-We use [Rockcraft](https://canonical-rockcraft.readthedocs-hosted.com/en/latest/) to build OCI Images for <charm-name>.
-The images are defined in [<charm-name> rock](link to rock).
-They are published to [Charmhub](https://charmhub.io/), the official repository of charms.
-
-> See more: [How to publish your charm on Charmhub](https://canonical-charmcraft.readthedocs-hosted.com/en/stable/howto/manage-charms/#publish-a-charm-on-charmhub)
+This subordinate charm does not use containers or Pebble-managed processes. Instead, it directly manages system resources (snap and nftables) on the host machine.
 
 ## Metrics
+
+To be added in the future.
 
 <!--
 If the charm uses metrics, include a list under reference/metrics.md and link that document here.
@@ -86,37 +101,49 @@ See [metrics](link-to-metrics-document) for more information.
 
 ## Juju events
 
-For this charm, the following Juju events are observed:
+The charm observes the following Juju events:
 
-<!--
-Numbered list of Juju events. Link to describe the event in more detail (either in Juju docs or in a specific charm's docs). When is the event fired? What does the event indicate/mean?
--->
+- `install`: Installs the aproxy snap.
+
+- `start`: Configures nftables rules and ensures interception is running.
+
+- `config-changed`: Reapplies configuration (proxy address, excluded addresses list, intercepted ports).
+
+- `stop`: Cleans up nftables rules and removes the snap.
 
 > See more in the Juju docs: [Hook](https://documentation.ubuntu.com/juju/latest/user/reference/hook/)
 
 ## Charm code overview
 
-The `src/charm.py` is the default entry point for a charm and has the <relevant-charm-class> Python class which inherits
+The `src/charm.py` is the default entry point for a charm and has the AproxyCharm Python class which inherits
 from CharmBase. CharmBase is the base class from which all charms are formed, defined
 by [Ops](https://ops.readthedocs.io/en/latest/index.html) (Python framework for developing charms).
 
 > See more in the Juju docs: [Charm](https://documentation.ubuntu.com/juju/latest/user/reference/charm/)
 
-The `__init__` method guarantees that the charm observes all events relevant to its operation and handles them.
+This charm uses a holistic event handling approach to manage installation, configuration, and lifecycle events through a unified handler.
+Rather than maintaining separate methods for each Juju event, the charm consolidates related logic into a single configuration flow to ensure consistency and idempotency across charm operations.
 
-Take, for example, when a configuration is changed by using the CLI.
+In the `__init__` method, the charm observes key Juju lifecycle events and maps them to corresponding handlers:
 
-1. User runs the configuration command:
+- `install`, `start`, and `config-changed` event → `_on_start_and_configure`: Handles snap installation, snap configuration, and nftables setup tasks in a unified process.
+
+- `stop` event → `_on_stop`: Handles nftables cleanup, and snap removal.
+
+For example, when a configuration changes:
+
+1. User runs:
 
 ```bash
-juju config <relevant-charm-configuration>
+juju config aproxy proxy-address=my-proxy.local
 ```
 
 2. A `config-changed` event is emitted.
-3. In the `__init__` method is defined how to handle this event like this:
+
+3. The charm observes it:
 
 ```python
-self.framework.observe(self.on.config_changed, self._on_config_changed)
+self.framework.observe(self.on.config_changed, self._on_start_and_configure)
 ```
 
-4. The method `_on_config_changed`, for its turn, will take the necessary actions such as waiting for all the relations to be ready and then configuring the containers.
+4. `_on_start_and_configure` validates the configuration, sets snap options, and reapplies the nftables rules.
