@@ -33,7 +33,7 @@ Specifies the target proxy IP address and port for traffic forwarding.
 
 If no value is provided:
 
-- The charm will attempt to use the principal charm’s `juju-https-proxy` or `juju-http-proxy` relation data.
+- The charm will attempt to use the `juju-https-proxy` or `juju-http-proxy` juju model configuration data.
 - If the proxy relation is unavailable, the charm will remain in a `BlockedStatus` until a valid configuration is provided.
 
 Usage Example:
