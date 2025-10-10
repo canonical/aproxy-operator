@@ -63,6 +63,11 @@ jobs:
         run: terraform apply -auto-approve
         working-directory: ${{ env.WORKING_DIR }}
 
+      - name: Deploy principal and relate aproxy
+        run: |
+          juju deploy ubuntu --channel=latest/stable --model test-aproxy-example
+          juju integrate ubuntu aproxy --model test-aproxy-example
+
       - name: Wait for aproxy to become active
         run: |
           echo "Waiting for aproxy to be active..."
