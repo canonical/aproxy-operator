@@ -4,7 +4,7 @@
 resource "juju_application" "aproxy" {
   name = var.app_name
   charm {
-    name     = var.charm_name
+    name     = "aproxy"
     channel  = var.channel
     revision = var.revision
     base     = var.base
@@ -12,5 +12,5 @@ resource "juju_application" "aproxy" {
 
   model  = var.model
   config = var.config
-  units  = var.units
+  units  = 1
 }

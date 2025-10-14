@@ -7,12 +7,6 @@ variable "app_name" {
   default     = "aproxy"
 }
 
-variable "charm_name" {
-  description = "Charmhub charm name for aproxy."
-  type        = string
-  default     = "aproxy"
-}
-
 variable "base" {
   description = "The operating system on which to deploy"
   type        = string
@@ -40,10 +34,4 @@ variable "revision" {
   description = "Revision number of the charm"
   type        = number
   default     = null
-}
-
-variable "units" {
-  description = "Number of units to deploy"
-  type        = number
-  default     = 1
 }
