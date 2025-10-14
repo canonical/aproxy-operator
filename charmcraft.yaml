@@ -10,7 +10,7 @@ name: aproxy
 title: Aproxy Subordinate Charm
 summary: A subordinate charm that deploys the aproxy application.
 links:
-  documentation: https://discourse.charmhub.io/t/aproxy-operator-overview/19030
+  documentation: https://discourse.charmhub.io/t/aproxy-operator-documentation-overview/19030
   issues: https://github.com/canonical/aproxy-operator/issues
   source: https://github.com/canonical/aproxy-operator
   contact: https://launchpad.net/~canonical-is-devops
