@@ -377,7 +377,7 @@ class AproxyManager:
             chain prerouting {{
                 type nat hook prerouting priority dstnat; policy accept;
                 ip daddr @excluded_nets return
-                tcp dport {{ {ports_clause} }} counter dnat {server_ip}:{APROXY_LISTEN_PORT}
+                tcp dport {{ {ports_clause} }} counter dnat to {server_ip}:{APROXY_LISTEN_PORT}
             }}
 
             chain output {{
@@ -388,6 +388,8 @@ class AproxyManager:
 
             chain input {{
                 type filter hook input priority filter; policy accept;
+                iif "lo" accept
+                ip saddr {server_ip} tcp dport {APROXY_LISTEN_PORT} accept
                 tcp dport {APROXY_LISTEN_PORT} drop
             }}
         }}
