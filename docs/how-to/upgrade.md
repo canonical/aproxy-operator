@@ -1,6 +1,6 @@
 # How to upgrade
 
-Upgrading the aproxy charm is a simple process that uses the [`juju refresh`](https://documentation.ubuntu.com/juju/3.6/reference/juju-cli/list-of-juju-cli-commands/refresh/) command.
+To upgrade the aproxy charm, use the [`juju refresh`](https://documentation.ubuntu.com/juju/3.6/reference/juju-cli/list-of-juju-cli-commands/refresh/) command.
 Since aproxy does not manage any persistent data or databases, there are no backup or migration steps required before upgrading.
 
 ## Before you begin

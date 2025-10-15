@@ -40,7 +40,7 @@ juju models
 
 ## Deploy the principal charm
 
-Since aproxy is a subordinate charm, it must be related to a principal charm. In this example, we will use the **ubuntu** charm as the primary application to demonstrate how aproxy integrates with another service.
+Since aproxy is a subordinate charm, it must be related to a principal charm. In this example, we will use the **Ubuntu** charm as the primary application to demonstrate how aproxy integrates with another service.
 
 Deploy the ubuntu charm:
 
@@ -73,13 +73,13 @@ Because it is a subordinate charm, it will not create its own unit until it is r
 
 ## Integrate aproxy to the principal charm
 
-Next, integrate the aproxy subordinate charm to the ubuntu application. This establishes the connection that allows aproxy to intercept outbound TCP traffic from ubuntu.
+Next, integrate the aproxy subordinate charm to the Ubuntu application. This establishes the connection that allows aproxy to intercept outbound TCP traffic from the Ubuntu charm.
 
 ```bash
 juju integrate ubuntu aproxy
 ```
 
-Once the relation is established, Juju will automatically attach aproxy to the ubuntu unit.
+Once the relation is established, Juju will automatically attach aproxy to the Ubuntu unit.
 
 ## Check the deployment was successful
 
@@ -89,7 +89,7 @@ Verify that both charms are deployed and related correctly:
 juju status
 ```
 
-Example output:
+The output should be similar to the following:
 
 ```
 Model           Controller  Cloud/Region   Version
@@ -104,13 +104,13 @@ ubuntu/0*    active    idle   0        10.152.184.228
   aproxy/0*  active    idle            10.152.184.228         Service ready on target proxy 127.0.0.1:80
 ```
 
-You should see both applications in an **active** state, with aproxy listed as a subordinate unit to ubuntu.
+You should see both applications in an **active** state, with aproxy listed as a subordinate unit to the Ubuntu charm.
 
 ## Run a configuration test
 
 To confirm that the charm is functioning properly, run configuration change on aproxy.
 
-For example, let's set the `intercept-ports` to be `80`:
+Let's set the `intercept-ports` to be `80`:
 
 ```bash
 juju config aproxy intercept-ports=80
@@ -122,7 +122,7 @@ Then verify that the configuration has been applied:
 juju config aproxy
 ```
 
-Expected output:
+The output should be similar to the following:
 
 ```
 application: aproxy
@@ -178,7 +178,7 @@ juju ssh ubuntu/0
 curl -v cloud-images.ubuntu.com
 ```
 
-Expected output:
+If successful, the output should be similar to the following:
 
 ```
 * Host cloud-images.ubuntu.com:80 was resolved.
@@ -235,6 +235,6 @@ If you used a Multipass VM for this tutorial and no longer need it, you can remo
 multipass delete --purge my-juju-vm
 ```
 
-## Next step
+## Next steps
 
-Visit the [aproxy charm documentation](https://discourse.charmhub.io/t/aproxy-operator-documentation-overview/19030) for advanced usage and configuration options.
+Visit the [aproxy charm documentation](https://charmhub.io/aproxy/docs) for advanced usage and configuration options.
