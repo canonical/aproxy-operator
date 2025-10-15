@@ -23,12 +23,9 @@ description: |
   This charm is useful in environments that require transparent proxying for compliance,
   monitoring, or traffic redirection.
 
-base: ubuntu@24.04
-build-base: ubuntu@24.04
 platforms:
-  amd64:
-    build-on: [amd64]
-    build-for: [amd64]
+  ubuntu@22.04:amd64:
+  ubuntu@24.04:amd64:
 
 requires:
   juju-info:
