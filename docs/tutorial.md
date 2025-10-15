@@ -108,7 +108,7 @@ You should see both applications in an **active** state, with aproxy listed as a
 
 ## Run a configuration test
 
-To confirm that the charm is functioning properly, run an action or configuration change on aproxy.
+To confirm that the charm is functioning properly, run configuration change on aproxy.
 
 For example, let's set the `intercept-ports` to be `80`:
 
@@ -165,6 +165,56 @@ settings:
     type: string
     value: 127.0.0.1:80
 
+```
+
+## Run a connection test
+
+To confirm that aproxy is forwarding properly, make an outbound TCP connection on the principal charm.
+
+For example, let's curl `cloud-images.ubuntu.com` from inside `ubuntu/0` unit:
+
+```bash
+juju ssh ubuntu/0
+curl -v cloud-images.ubuntu.com
+```
+
+Expected output:
+
+```
+* Host cloud-images.ubuntu.com:80 was resolved.
+* IPv6: 2620:2d:4000:1::17, 2620:2d:4000:1::1a
+* IPv4: 185.125.190.40, 185.125.190.37
+*   Trying 185.125.190.40:80...
+* Connected to cloud-images.ubuntu.com (185.125.190.40) port 80
+> GET / HTTP/1.1
+> Host: cloud-images.ubuntu.com
+> User-Agent: curl/8.5.0
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+< Transfer-Encoding: chunked
+< Connection: close
+< Content-Type: text/html;charset=UTF-8
+< Date: Tue, 14 Oct 2025 08:43:00 GMT
+< Server: Apache/2.4.29 (Ubuntu)
+< Vary: Accept-Encoding
+< Via: 1.1 juju-9d5023-prod-ps6-internal-proxy-13 (squid/5.9)
+< X-Cache: MISS from juju-9d5023-prod-ps6-internal-proxy-13
+< X-Cache-Lookup: MISS from juju-9d5023-prod-ps6-internal-proxy-13:3128
+```
+
+Then verify that aproxy is intercepting and forwarding the traffic to target proxy:
+
+```bash
+sudo snap logs aproxy.aproxy -f
+```
+
+Expected output:
+
+```
+2025-10-13T14:18:16Z aproxy.aproxy[16156]: 2025/10/13 14:18:16 INFO start listening on :8443
+2025-10-13T14:18:16Z aproxy.aproxy[16156]: 2025/10/13 14:18:16 INFO start forwarding to proxy 127.0.0.1:80
+2025-10-14T08:43:00Z aproxy.aproxy[16156]: 2025/10/14 08:43:00 INFO relay HTTP connection to proxy src=10.142.134.228:41826 original_dst=185.125.190.40:80 host=cloud-images.ubuntu.com:80
 ```
 
 ## Tear down the environment
