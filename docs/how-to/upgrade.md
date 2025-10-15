@@ -23,7 +23,7 @@ juju refresh aproxy
 
 This command will pull and apply the most recent revision of the aproxy charm from the same channel it was originally deployed from.
 
-## Verify the Upgrade
+## Verify the upgrade
 
 After the refresh completes, confirm that the charm and its units are active:
 
