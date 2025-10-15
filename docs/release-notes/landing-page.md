@@ -12,5 +12,4 @@ Release notes are published when there is a need (maintenance, bug fixes, etc.)
 
 ## Releases
 
-- [latest/stable](https://charmhub.io/aproxy?channel=latest/stable)
-- [latest/edge](https://charmhub.io/aproxy?channel=latest/edge)
+Coming soon.

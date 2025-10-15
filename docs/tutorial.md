@@ -1,7 +1,5 @@
 # Deploy the aproxy subordinate charm
 
-## Introduction
-
 The aproxy subordinate charm provides proxy functionality that can be attached to a principal charm. As a subordinate charm, it enhances existing applications by adding proxy configuration management and integration without being deployed as a standalone service.
 
 In this tutorial, you will deploy the aproxy subordinate charm in a Juju model, relate it to a principal charm, and verify that it is correctly integrated and running.
