@@ -18,10 +18,27 @@ from tests.integration.tinyproxy import deploy_tinyproxy
 
 @pytest.fixture(name="aproxy_charm_file", scope="session")
 def aproxy_charm_file_fixture(pytestconfig: pytest.Config) -> str:
-    """Build or get the aproxy charm file."""
+    """Build or get the aproxy charm file.
+
+    Args:
+        pytestconfig: Pytest configuration object.
+
+    Returns:
+        Path to the built or provided aproxy charm file.
+    """
     charms = pytestconfig.getoption("--charm-file")
     if charms and len(charms) == 1:
         return charms[0]
+
+    if charms and len(charms) > 1:
+        # Prefer 24.04 build if available
+        charm_2404 = [c for c in charms if "24.04" in c.name]
+        charm_2204 = [c for c in charms if "22.04" in c.name]
+        if charm_2404:
+            return str(charm_2404[0])
+        if charm_2204:
+            return str(charm_2204[0])
+        raise AssertionError("Multiple charm files found, unsure which one to use.")
 
     # Otherwise, build the charm
     try:
@@ -37,21 +54,7 @@ def aproxy_charm_file_fixture(pytestconfig: pytest.Config) -> str:
     charm_path = pathlib.Path(__file__).parent.parent.parent
     charms = [p.absolute() for p in charm_path.glob("aproxy_*.charm")]
     assert charms, "aproxy_*.charm file not found."
-
-    # Prefer 24.04 build if available
-    if len(charms) > 1:
-        charm_2404 = [c for c in charms if "24.04" in c.name]
-        charm_2204 = [c for c in charms if "22.04" in c.name]
-        if charm_2404:
-            selected = charm_2404[0]
-        elif charm_2204:
-            selected = charm_2204[0]
-        else:
-            raise AssertionError("Multiple charm files found, unsure which one to use.")
-    else:
-        selected = charms[0]
-
-    return str(selected)
+    return str(charms[0])
 
 
 @pytest.fixture(name="juju", scope="module")
