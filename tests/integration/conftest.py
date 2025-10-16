@@ -32,8 +32,8 @@ def aproxy_charm_file_fixture(pytestconfig: pytest.Config) -> str:
 
     if charms and len(charms) > 1:
         # Prefer 24.04 build if available
-        charm_2404 = [c for c in charms if "24.04" in c]
-        charm_2204 = [c for c in charms if "22.04" in c]
+        charm_2404 = [file for file in charms if "24.04" in file]
+        charm_2204 = [file for file in charms if "22.04" in file]
         if charm_2404:
             return charm_2404[0]
         if charm_2204:
