@@ -8,7 +8,7 @@ For instructions on a specific release, see the corresponding release notes.
 
 ## Release policy and schedule
 
-Release notes are published when there is a need (maintenance, bug fixes, etc.)
+Release notes are published when there is a need (maintenance, bug fixes, etc.).
 
 ## Releases
 

@@ -40,7 +40,7 @@ juju models
 
 Since aproxy is a subordinate charm, it must be related to a principal charm. In this example, we will use the **Ubuntu** charm as the primary application to demonstrate how aproxy integrates with another service.
 
-Deploy the ubuntu charm:
+Deploy the Ubuntu charm:
 
 ```bash
 juju deploy ubuntu
@@ -61,13 +61,13 @@ ubuntu  24.04    active      1  ubuntu  latest/stable   26  no
 
 ## Deploy the aproxy subordinate charm
 
-Now deploy the aproxy charm with the target proxy address and proxy port. In this example, we will use `127.0.0.1:80`.
+Now deploy the aproxy charm with the target proxy address and proxy port. In this tutorial, we will use `127.0.0.1:80`.
 
 ```bash
 juju deploy aproxy --config proxy-address="127.0.0.1:80"
 ```
 
-Because it is a subordinate charm, it will not create its own unit until it is related to a principal charm.
+Because it is a subordinate charm, it will not create its own unit until it is integrated to a principal charm.
 
 ## Integrate aproxy to the principal charm
 
