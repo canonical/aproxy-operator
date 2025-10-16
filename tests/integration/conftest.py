@@ -35,9 +35,9 @@ def aproxy_charm_file_fixture(pytestconfig: pytest.Config) -> str:
         charm_2404 = [c for c in charms if "24.04" in c]
         charm_2204 = [c for c in charms if "22.04" in c]
         if charm_2404:
-            return str(charm_2404[0])
+            return charm_2404[0]
         if charm_2204:
-            return str(charm_2204[0])
+            return charm_2204[0]
         raise AssertionError("Multiple charm files found, unsure which one to use.")
 
     # Otherwise, build the charm
