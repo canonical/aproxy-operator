@@ -27,10 +27,10 @@ This charm makes operating aproxy simple and straightforward for DevOps or SRE t
 
 ## In this documentation
 
-|                                                                                                                                         |                                                                                                                            |
-| --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| [Tutorials](https://charmhub.io/aproxy/docs/tutorial)</br> Get started - a hands-on introduction to using the charm for new users </br> | [How-to guides](https://charmhub.io/aproxy/docs/how-to) </br> Step-by-step guides covering key operations and common tasks |
-| [Reference](https://charmhub.io/aproxy/docs/reference) </br> Technical information - specifications, APIs, architecture                 | [Explanation](https://charmhub.io/aproxy/docs/explanation) </br> Concepts - discussion and clarification of key topics     |
+|                                                                                                                                         |                                                                                                                                     |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [Tutorials](https://charmhub.io/aproxy/docs/tutorial)</br> Get started - a hands-on introduction to using the charm for new users </br> | [How-to guides](https://charmhub.io/aproxy/docs/back-up-restore) </br> Step-by-step guides covering key operations and common tasks |
+| [Reference](https://charmhub.io/aproxy/docs/integrations) </br> Technical information - specifications, APIs, architecture              | [Explanation](https://charmhub.io/aproxy/docs/architecture) </br> Concepts - discussion and clarification of key topics             |
 
 ## Contributing to this documentation
 
@@ -50,26 +50,26 @@ projects, contributions, suggestions, fixes, and constructive feedback.
 - [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
 - [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
-- [Contribute](https://charmhub.io/aproxy/docs/how-to/contribute)
+- [Contribute](https://charmhub.io/aproxy/docs/contribute)
 
 Thinking about using the aproxy operator for your next project?
 [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
 
 # Contents
 
-1. [How-to]()
-1. [Integrate with COS](how-to/integrate-with-cos.md)
+1. [How-to](how-to)
 1. [Back up and restore](how-to/back-up-restore.md)
-1. [Upgrade](how-to/upgrade.md)
-1. [Contribute](how-to/contribute.md)
 1. [Configure](how-to/configure.md)
-1. [Reference]()
+1. [Contribute](how-to/contribute.md)
+1. [Integrate with COS](how-to/integrate-with-cos.md)
+1. [Upgrade](how-to/upgrade.md)
+1. [Reference](reference)
 1. [Actions](reference/actions.md)
 1. [Configurations](reference/configurations.md)
 1. [Integrations](reference/integrations.md)
 1. [Metrics](reference/metrics.md)
-1. [Explanation]()
+1. [Explanation](explanation)
 1. [Charm architecture](explanation/charm-architecture.md)
 1. [Security](explanation/security.md)
-1. [Release notes]()
+1. [Release notes](release-notes)
 1. [Overview](release-notes/landing-page.md)
