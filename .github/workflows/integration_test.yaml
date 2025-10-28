@@ -14,3 +14,5 @@ jobs:
       trivy-image-config: "trivy.yaml"
       juju-channel: "3.6/stable"
       provider: "lxd"
+      tmate-debug: true
+      tmate-timeout: 90
