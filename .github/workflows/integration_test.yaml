@@ -15,7 +15,8 @@ jobs:
       self-hosted-runner: true
       self-hosted-runner-label: "edge"
       juju-channel: '3/stable'
-      provider: 'lxd'  allure-report:
+      provider: 'lxd'  
+  allure-report:
     if: always() && !cancelled()
     needs:
       - integration-tests
