@@ -8,7 +8,7 @@
 import subprocess  # nosec
 
 import pytest
-from charms.operator_libs_linux.v2 import snap
+from charmlibs import snap
 
 from aproxy import NFT_CONF_FILE
 from errors import NftApplyError, NftCleanupError
