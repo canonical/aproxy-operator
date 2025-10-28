@@ -12,7 +12,5 @@ jobs:
       load-test-run-args: "-e LOAD_TEST_HOST=localhost"
       trivy-fs-enabled: true
       trivy-image-config: "trivy.yaml"
-      self-hosted-runner: true
-      self-hosted-runner-label: "edge"
       juju-channel: "3.6/stable"
       provider: "lxd"
