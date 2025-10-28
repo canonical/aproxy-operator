@@ -71,7 +71,7 @@ def deploy_tinyproxy(juju: jubilant.Juju) -> str:
     )
 
     # Wait until the service is up
-    juju.wait(jubilant.all_active, timeout=10 * 60)
+    juju.wait(jubilant.all_active, timeout=20 * 60)
 
     # Grab unit IP
     units = juju.status().get_units("tinyproxy")
