@@ -1,0 +1,1 @@
+[32mINFO    [0m jubilant:_juju.py:313 cli: juju add-model --no-switch jubilant-40b10b1d
