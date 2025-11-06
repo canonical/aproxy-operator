@@ -14,6 +14,7 @@ def deploy_tinyproxy(juju: jubilant.Juju, base: str) -> str:
 
     Args:
         juju: The Juju controller instance.
+        base: The base to use for deployment.
 
     Returns:
         Proxy URL (http://<unit-ip>:8888).
