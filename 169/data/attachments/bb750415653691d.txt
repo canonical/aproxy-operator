@@ -1,0 +1,1 @@
+[32mINFO    [0m jubilant:_juju.py:313 cli: juju debug-log --model jubilant-b0b09a80 --limit 1000
