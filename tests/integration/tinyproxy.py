@@ -9,7 +9,7 @@ import textwrap
 import jubilant
 
 
-def deploy_tinyproxy(juju: jubilant.Juju) -> str:
+def deploy_tinyproxy(juju: jubilant.Juju, series: str) -> str:
     """Deploy a tinyproxy service into the Juju model using any-charm.
 
     Args:
@@ -67,6 +67,7 @@ def deploy_tinyproxy(juju: jubilant.Juju) -> str:
         "any-charm",
         "tinyproxy",
         channel="latest/edge",
+        series=series,
         config={"src-overwrite": json.dumps({"any_charm.py": any_charm_py})},
     )
 
