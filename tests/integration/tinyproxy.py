@@ -9,11 +9,12 @@ import textwrap
 import jubilant
 
 
-def deploy_tinyproxy(juju: jubilant.Juju) -> str:
+def deploy_tinyproxy(juju: jubilant.Juju, base: str) -> str:
     """Deploy a tinyproxy service into the Juju model using any-charm.
 
     Args:
         juju: The Juju controller instance.
+        base: The base to use for deployment.
 
     Returns:
         Proxy URL (http://<unit-ip>:8888).
@@ -67,11 +68,12 @@ def deploy_tinyproxy(juju: jubilant.Juju) -> str:
         "any-charm",
         "tinyproxy",
         channel="latest/edge",
+        base=base,
         config={"src-overwrite": json.dumps({"any_charm.py": any_charm_py})},
     )
 
     # Wait until the service is up
-    juju.wait(jubilant.all_active, timeout=10 * 60)
+    juju.wait(jubilant.all_active, timeout=20 * 60)
 
     # Grab unit IP
     units = juju.status().get_units("tinyproxy")

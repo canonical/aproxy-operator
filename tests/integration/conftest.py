@@ -158,4 +158,7 @@ def aproxy_app_fixture(juju: jubilant.Juju, deploy_charms) -> App:
 @pytest.fixture(name="tinyproxy_url", scope="module")
 def get_tinyproxy_url(juju):
     """Deploy Tinyproxy and return its URL."""
-    return deploy_tinyproxy(juju)
+    base = "ubuntu@" + subprocess.check_output(["lsb_release", "-rs"]).strip().decode(  # nosec
+        "utf-8"
+    )
+    return deploy_tinyproxy(juju, base=base)
