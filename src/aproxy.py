@@ -330,15 +330,18 @@ class AproxyManager:
         relation, binding = self.check_relation_availability()
         current_unit_ip = str(binding.network.bind_address)
 
-        if logger.getEffectiveLevel() == logging.DEBUG:
-            units_ip: list[str] = [
-                unit_data.get("private-address", "")
-                for _, unit_data in relation.data.items()
-                if unit_data.get("private-address", "")
-            ]
+        if logger.isEnabledFor(logging.DEBUG):
+            # Only read from unit databags to avoid RelationDataAccessError on
+            # non-leader units (reading own application databag is forbidden).
+            units_ip: list[str] = []
+            for entity in relation.data.keys():
+                if isinstance(entity, ops.model.Unit):
+                    ip = relation.data[entity].get("private-address", "")
+                    if ip:
+                        units_ip.append(ip)
 
             logger.debug(
-                "Resolved unit IP %s via relation '%s' (all peer IPs: %s)",
+                "Resolved unit IP %s via relation '%s' (unit IPs: %s)",
                 current_unit_ip,
                 RELATION_NAME,
                 units_ip,
