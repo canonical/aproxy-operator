@@ -333,18 +333,17 @@ class AproxyManager:
         if logger.isEnabledFor(logging.DEBUG):
             # Only read from unit databags to avoid RelationDataAccessError on
             # non-leader units (reading own application databag is forbidden).
-            units_ip: list[str] = []
-            for entity in relation.data.keys():
-                if isinstance(entity, ops.model.Unit):
-                    ip = relation.data[entity].get("private-address", "")
-                    if ip:
-                        units_ip.append(ip)
+            peer_unit_ips: list[str] = []
+            for unit in relation.units:
+                ip = relation.data[unit].get("private-address", "")
+                if ip:
+                    peer_unit_ips.append(ip)
 
             logger.debug(
-                "Resolved unit IP %s via relation '%s' (unit IPs: %s)",
+                "Resolved unit IP %s via relation '%s' (peer unit IPs: %s)",
                 current_unit_ip,
                 RELATION_NAME,
-                units_ip,
+                peer_unit_ips,
             )
 
         return current_unit_ip
