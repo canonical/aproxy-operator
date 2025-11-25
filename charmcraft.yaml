@@ -34,9 +34,10 @@ requires:
 
 parts:
   charm:
-    plugin: charm
     source: .
-
+    plugin: uv
+    build-snaps:
+    - astral-uv
 config:
   options:
     proxy-address:

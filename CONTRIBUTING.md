@@ -1,6 +1,6 @@
 # Contributing
 
-This document explains the processes and practices recommended for contributing enhancements to the aproxy charm.
+This document explains the processes and practices recommended for contributing enhancements to the Aproxy Subordinate charm.
 
 ## Overview
 
@@ -9,7 +9,7 @@ This document explains the processes and practices recommended for contributing 
 - If you would like to chat with us about your use-cases or proposed implementation, you can reach
   us at [Canonical Matrix public channel](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
   or [Discourse](https://discourse.charmhub.io/).
-- Familiarizing yourself with the [Juju documentation](https://canonical-juju.readthedocs-hosted.com/en/latest/user/howto/manage-charms/)
+- Familiarizing yourself with the [Juju documentation](https://documentation.ubuntu.com/juju/3.6/howto/manage-charms/)
   will help you a lot when working on new features or bug fixes.
 - All enhancements require review before being merged. Code review typically examines
   - code quality
@@ -25,10 +25,11 @@ This document explains the processes and practices recommended for contributing 
 When contributing, you must abide by the
 [Ubuntu Code of Conduct](https://ubuntu.com/community/ethos/code-of-conduct).
 
-## Releases and versions
+## Changelog
 
 Please ensure that any new feature, fix, or significant change is documented by
-adding an entry to the [CHANGELOG.md](https://github.com/canonical/aproxy-operator/blob/main/docs/changelog.md) file.
+adding an entry to the [CHANGELOG.md](./docs/changelog.md) file. Use the date of the
+contribution as the header for new entries.
 
 To learn more about changelog best practices, visit [Keep a Changelog](https://keepachangelog.com/).
 
@@ -76,7 +77,7 @@ your pull request must provide the following details:
   - The [contributing guide](https://github.com/canonical/is-charms-contributing-guide) was applied
   - The changes are compliant with [ISD054 - Managing Charm Complexity](https://discourse.charmhub.io/t/specification-isd014-managing-charm-complexity/11619)
   - The documentation is updated
-  - The PR is tagged with appropriate label (trivial, senior-review-required, documentation, etc.)
+  - The PR is tagged with appropriate label (trivial, senior-review-required)
   - The changelog has been updated
 
 ### Signing commits
@@ -87,7 +88,7 @@ we use the [Canonical contributor license agreement](https://assets.ubuntu.com/v
 
 #### Canonical contributor agreement
 
-Canonical welcomes contributions to the aproxy charm. Please check out our
+Canonical welcomes contributions to the Aproxy Subordinate charm. Please check out our
 [contributor agreement](https://ubuntu.com/legal/contributors) if you're interested in contributing to the solution.
 
 The CLA sign-off is simple line at the
@@ -107,18 +108,31 @@ To make contributions to this charm, you'll need a working
 
 The code for this charm can be downloaded as follows:
 
-```bash
+```
 git clone https://github.com/canonical/aproxy-operator
 ```
 
-You can create an environment for development with `python3-venv`.
-We will also install `tox` inside the virtual environment for testing:
+Make sure to install [`uv`](https://docs.astral.sh/uv/). For example, you can install `uv` on Ubuntu using:
 
 ```bash
-sudo apt install python3-venv
-python3 -m venv venv
-source venv/bin/activate
-pip install tox
+sudo snap install astral-uv --classic
+```
+
+For other systems, follow the [`uv` installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+
+Then install `tox` with its extensions, and install a range of Python versions:
+
+```bash
+uv python install
+uv tool install tox --with tox-uv
+uv tool update-shell
+```
+
+To create a development environment, run:
+
+```bash
+uv sync --all-groups
+source .venv/bin/activate
 ```
 
 ### Test
@@ -127,13 +141,34 @@ This project uses `tox` for managing test environments. There are some pre-confi
 that can be used for linting and formatting code when you're preparing contributions to the charm:
 
 * ``tox``: Executes all of the basic checks and tests (``lint``, ``unit``, ``static``, and ``coverage-report``).
-* ``tox -e fmt``: Runs formatting using ``black`` and ``isort``.
+* ``tox -e fmt``: Runs formatting using ``ruff``.
 * ``tox -e lint``: Runs a range of static code analysis to check the code.
 * ``tox -e static``: Runs other checks such as ``bandit`` for security issues.
+* ``tox -e unit``: Runs the unit tests.
+* ``tox -e integration``: Runs the integration tests.
 
-### Build the charm
+### Build the rock and charm
 
-Aproxy is a subordinate machine charm that installs a snap and configures nftables. Build the charm in this git repository using:
+Use [Rockcraft](https://documentation.ubuntu.com/rockcraft/stable/) to create an
+OCI image for the Aproxy Subordinate app, and then upload the image to a MicroK8s registry,
+which stores OCI archives so they can be downloaded and deployed.
+
+Enable the MicroK8s registry:
+
+```bash
+microk8s enable registry
+```
+
+The following commands pack the OCI image and push it into
+the MicroK8s registry:
+
+```bash
+cd <project_dir>
+rockcraft pack
+skopeo --insecure-policy copy --dest-tls-verify=false oci-archive:<rock-name>.rock docker://localhost:32000/<app-name>:latest
+```
+
+Build the charm in this git repository using:
 
 ```shell
 charmcraft pack
@@ -146,10 +181,6 @@ charmcraft pack
 juju add-model charm-dev
 # Enable DEBUG logging
 juju model-config logging-config="<root>=INFO;unit=DEBUG"
-# Deploy the charm with a required config
-juju deploy ./aproxy.charm --config proxy-address=<target.proxy>
-# Integrate with a principal charm
-juju integrate aproxy <principal-charm>
+# Deploy the charm
+juju deploy ./aproxy*.charm
 ```
-
-

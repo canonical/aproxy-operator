@@ -315,7 +315,7 @@ class AproxyManager:
         try:
             with socket.create_connection((host, port), timeout=5):
                 return True
-        except (socket.timeout, ConnectionRefusedError) as e:
+        except (TimeoutError, ConnectionRefusedError) as e:
             logger.error("Proxy %s:%s is not reachable: %s", host, port, e)
             return False
 
