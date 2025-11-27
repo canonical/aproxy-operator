@@ -43,7 +43,7 @@ class FakeSnap:
             config: Dictionary of configuration key-value pairs.
         """
         args = [f"{k}={v}" for k, v in config.items()]
-        subprocess.run(["snap", "set", "aproxy"] + args, check=True)  # nosec
+        subprocess.run(["snap", "set", "aproxy", *args], check=True)  # nosec
 
     def get(self, key: str, default=""):
         """Simulate getting snap configuration using subprocess.
