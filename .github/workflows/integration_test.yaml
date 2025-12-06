@@ -3,12 +3,18 @@ name: Integration tests
 on:
   pull_request:
   schedule:
-  - cron: "0 15 * * SAT"
+    - cron: "0 15 * * SAT"
 
 jobs:
   integration-tests:
-    uses: 
-      canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    strategy:
+      fail-fast: false
+      matrix:
+        base:
+          - "20.04"
+          - "22.04"
+          - "24.04"
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     permissions:
       packages: write
@@ -21,8 +27,9 @@ jobs:
       self-hosted-runner-label: "edge"
       juju-channel: "3/stable"
       provider: "lxd"
+      extra-arguments: "--base ${{ matrix.base }}"
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:
-    - integration-tests
+      - integration-tests
     uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main
