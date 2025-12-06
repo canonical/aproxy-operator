@@ -27,23 +27,22 @@ def aproxy_charm_file_fixture(pytestconfig: pytest.Config) -> str:
         Path to the built or provided aproxy charm file.
     """
     charms = pytestconfig.getoption("--charm-file")
-    if charms and len(charms) == 1:
-        return charms[0]
+    base = pytestconfig.getoption("--base")
 
-    if charms and len(charms) > 1:
-        # Prefer 24.04 build if available
-        charm_2404 = [file for file in charms if "24.04" in file]
-        charm_2204 = [file for file in charms if "22.04" in file]
-        if charm_2404:
-            return charm_2404[0]
-        if charm_2204:
-            return charm_2204[0]
-        raise AssertionError("Multiple charm files found, unsure which one to use.")
+    if charms:
+        # Filter by requested base
+        matching_charms = [file for file in charms if base in file]
+        if matching_charms:
+            return matching_charms[0]
+        raise AssertionError(f"No matching charm found for base {base}.")
 
-    # Otherwise, build the charm
+    # Otherwise, build the charm for the requested base
+    base_index_map = {"20.04": 0, "22.04": 1, "24.04": 2}
+    bases_index = base_index_map.get(base, 2)
+
     try:
         subprocess.run(
-            ["charmcraft", "pack", "--bases-index=0"],
+            ["charmcraft", "pack", f"--bases-index={bases_index}"],
             check=True,
             capture_output=True,
             text=True,
@@ -53,8 +52,11 @@ def aproxy_charm_file_fixture(pytestconfig: pytest.Config) -> str:
 
     charm_path = pathlib.Path(__file__).parent.parent.parent
     charms = [p.absolute() for p in charm_path.glob("aproxy_*.charm")]
-    assert charms, "aproxy_*.charm file not found."
-    return str(charms[0])
+    # Filter for the requested base
+    matching_charms = [c for c in charms if base in str(c)]
+    if matching_charms:
+        return str(matching_charms[0])
+    raise AssertionError(f"No matching charm found for base {base}.")
 
 
 @pytest.fixture(name="juju", scope="module")
@@ -86,15 +88,19 @@ def juju_fixture(request: pytest.FixtureRequest) -> typing.Generator[jubilant.Ju
 
 
 @pytest.fixture(name="deploy_charms", scope="module")
-def deploy_charms_fixture(juju: jubilant.Juju, aproxy_charm_file: str, tinyproxy_url: str):
+def deploy_charms_fixture(
+    juju: jubilant.Juju, aproxy_charm_file: str, tinyproxy_url: str, pytestconfig: pytest.Config
+):
     """Deploy principal and subordinate charms for integration tests.
 
     Args:
         juju: Juju controller instance.
         aproxy_charm_file: Path to the built aproxy charm file.
         tinyproxy_url: URL of the upstream tinyproxy.
+        pytestconfig: Pytest configuration object.
     """
-    juju.deploy("ubuntu", base="ubuntu@24.04")
+    base = pytestconfig.getoption("--base", default="24.04")
+    juju.deploy("ubuntu", base=f"ubuntu@{base}")
     juju.deploy(aproxy_charm_file)
     juju.integrate("ubuntu", "aproxy")
     juju.cli("config", "aproxy", f"proxy-address={tinyproxy_url}:8888")

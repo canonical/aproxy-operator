@@ -27,3 +27,9 @@ def pytest_addoption(parser):
         default=False,
         help="Keep Juju models around after tests instead of destroying them",
     )
+    parser.addoption(
+        "--base",
+        action="store",
+        default="24.04",
+        help="Ubuntu base version to test",
+    )
