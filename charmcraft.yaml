@@ -23,10 +23,31 @@ description: |
   This charm is useful in environments that require transparent proxying for compliance,
   monitoring, or traffic redirection.
 
-platforms:
-  ubuntu@20.04:amd64:
-  ubuntu@22.04:amd64:
-  ubuntu@24.04:amd64:
+bases:
+  - build-on:
+      - name: ubuntu
+        channel: "22.04"
+        architectures: [amd64]
+    run-on:
+      - name: ubuntu
+        channel: "20.04"
+        architectures: [amd64]
+  - build-on:
+      - name: ubuntu
+        channel: "22.04"
+        architectures: [amd64]
+    run-on:
+      - name: ubuntu
+        channel: "22.04"
+        architectures: [amd64]
+  - build-on:
+      - name: ubuntu
+        channel: "24.04"
+        architectures: [amd64]
+    run-on:
+      - name: ubuntu
+        channel: "24.04"
+        architectures: [amd64]
 
 requires:
   juju-info:
