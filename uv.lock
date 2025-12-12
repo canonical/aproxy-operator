@@ -103,9 +103,9 @@ unit = [
 
 [package.metadata]
 requires-dist = [
-    { name = "charmlibs-snap", specifier = "==1.0.1" },
-    { name = "ops", specifier = "==3.4.0" },
-    { name = "pydantic", specifier = "==2.12.5" },
+    { name = "charmlibs-snap", specifier = ">=0.8.0,<2" },
+    { name = "ops", specifier = ">=2.23.0" },
+    { name = "pydantic", specifier = ">=2.10.6" },
 ]
 
 [package.metadata.requires-dev]
