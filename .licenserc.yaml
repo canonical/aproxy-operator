@@ -6,23 +6,24 @@ header:
       Copyright [year] [owner]
       See LICENSE file for licensing details.
     pattern: |
-        Copyright \d{4} Canonical Ltd.
-        See LICENSE file for licensing details.
+      Copyright \d{4} Canonical Ltd.
+      See LICENSE file for licensing details.
   paths:
-    - '**'
+  - '**'
   paths-ignore:
-    - '.github/**'
-    - 'lib/**'
-    - '**/*.json'
-    - '**/*.md'
-    - '**/*.txt'
-    - '.jujuignore'
-    - '.gitignore'
-    - '.licenserc.yaml'
-    - 'CODEOWNERS'
-    - 'LICENSE'
-    - 'trivy.yaml'
-    - 'pyproject.toml'
-    - 'zap_rules.tsv'
-    - '**/*.md.j2'
+  - '.github/**'
+  - 'lib/**'
+  - '**/*.json'
+  - '**/*.md'
+  - '**/*.txt'
+  - '.jujuignore'
+  - '.gitignore'
+  - '.licenserc.yaml'
+  - 'CODEOWNERS'
+  - 'LICENSE'
+  - 'trivy.yaml'
+  - 'pyproject.toml'
+  - 'zap_rules.tsv'
+  - '**/*.md.j2'
+  - 'uv.lock'
   comment: on-failure
