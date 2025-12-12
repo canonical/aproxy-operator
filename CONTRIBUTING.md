@@ -77,7 +77,7 @@ your pull request must provide the following details:
   - The [contributing guide](https://github.com/canonical/is-charms-contributing-guide) was applied
   - The changes are compliant with [ISD054 - Managing Charm Complexity](https://discourse.charmhub.io/t/specification-isd014-managing-charm-complexity/11619)
   - The documentation is updated
-  - The PR is tagged with appropriate label (trivial, senior-review-required)
+  - The PR is tagged with appropriate label (trivial, senior-review-required, documentation, etc.)
   - The changelog has been updated
 
 ### Signing commits
@@ -140,12 +140,12 @@ source .venv/bin/activate
 This project uses `tox` for managing test environments. There are some pre-configured environments
 that can be used for linting and formatting code when you're preparing contributions to the charm:
 
-* ``tox``: Executes all of the basic checks and tests (``lint``, ``unit``, ``static``, and ``coverage-report``).
-* ``tox -e fmt``: Runs formatting using ``ruff``.
-* ``tox -e lint``: Runs a range of static code analysis to check the code.
-* ``tox -e static``: Runs other checks such as ``bandit`` for security issues.
-* ``tox -e unit``: Runs the unit tests.
-* ``tox -e integration``: Runs the integration tests.
+- `tox`: Executes all of the basic checks and tests (`lint`, `unit`, `static`, and `coverage-report`).
+- `tox -e fmt`: Runs formatting using `ruff`.
+- `tox -e lint`: Runs a range of static code analysis to check the code.
+- `tox -e static`: Runs other checks such as `bandit` for security issues.
+- `tox -e unit`: Runs the unit tests.
+- `tox -e integration`: Runs the integration tests.
 
 ### Build the rock and charm
 
@@ -162,6 +162,8 @@ charmcraft pack
 juju add-model charm-dev
 # Enable DEBUG logging
 juju model-config logging-config="<root>=INFO;unit=DEBUG"
-# Deploy the charm
-juju deploy ./aproxy*.charm
+# Deploy the charm with a required config
+juju deploy ./aproxy.charm --config proxy-address=<target.proxy>
+# Integrate with a principal charm
+juju integrate aproxy <principal-charm>
 ```
