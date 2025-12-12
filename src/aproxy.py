@@ -49,7 +49,7 @@ RELATION_NAME = "juju-info"
 # (?!-)            : no leading dash
 # (?!.*--)         : no consecutive dashes
 # (?!.*-$)         : no trailing dash
-# ([a-zA-Z0-9-]{1,63}\.)*    : 1–63 chars per label, with dots allowed as separators
+# ([a-zA-Z0-9-]{1,63}\.)*    : 1-63 chars per label, with dots allowed as separators
 # ([a-zA-Z0-9-]{1,63})\.?$   : last label (with one dot allowed at the end)
 HOSTNAME_PATTERN = re.compile(
     r"^\.?(?!-)(?!.*--)(?!.*-$)([a-zA-Z0-9-]{1,63}\.)*([a-zA-Z0-9-]{1,63})\.?$"
@@ -141,21 +141,21 @@ class AproxyConfig(BaseModel):
     # ---------------- Validators ----------------
 
     @field_validator("proxy_address")
-    def _validate_proxy_address(cls, proxy_address: str) -> str:
+    def _validate_proxy_address(cls, proxy_address: str) -> str:  # noqa: N805
         """Validate that proxy_address is a non-empty string."""
         if not proxy_address or not isinstance(proxy_address, str) or not proxy_address.strip():
             raise ValueError("target proxy address is required to be non-empty string")
         return proxy_address.strip()
 
     @field_validator("proxy_port")
-    def _validate_proxy_port(cls, proxy_port: int) -> int:
+    def _validate_proxy_port(cls, proxy_port: int) -> int:  # noqa: N805
         """Validate that proxy_port is a valid port number."""
         if not 0 < proxy_port < 65536:
             raise ValueError(f"proxy port must be between 1 and 65535 instead of {proxy_port}")
         return proxy_port
 
     @field_validator("exclude_addresses")
-    def _validate_exclude_addresses(cls, exclude_addresses: List[str]) -> List[str]:
+    def _validate_exclude_addresses(cls, exclude_addresses: List[str]) -> List[str]:  # noqa: N805
         """Validate exclude_addresses entries are valid IPs, CIDRs, or hostnames."""
         valid_exclude_addresses = []
         for entry in exclude_addresses:
@@ -175,7 +175,7 @@ class AproxyConfig(BaseModel):
         return valid_exclude_addresses
 
     @field_validator("intercept_ports_list")
-    def _validate_and_merge_ports(cls, ports: List[str]) -> List[str]:
+    def _validate_and_merge_ports(cls, ports: List[str]) -> List[str]:  # noqa: N805
         """Validate and merge intercept_ports into a list of port ranges as strings."""
         if not ports:
             return []
@@ -315,7 +315,7 @@ class AproxyManager:
         try:
             with socket.create_connection((host, port), timeout=5):
                 return True
-        except (socket.timeout, ConnectionRefusedError) as e:
+        except (TimeoutError, ConnectionRefusedError) as e:
             logger.error("Proxy %s:%s is not reachable: %s", host, port, e)
             return False
 
@@ -363,8 +363,8 @@ class AproxyManager:
         excluded_ips = ", ".join(
             [
                 "127.0.0.0/8",  # private loopback range
+                *self.config.exclude_addresses,
             ]
-            + self.config.exclude_addresses
         )
 
         return f"""#!/usr/sbin/nft -f
@@ -434,7 +434,7 @@ class AproxyManager:
 
         try:
             # nosec B404,B603,B607: calling trusted system binary with predefined args
-            subprocess.run(["nft", "-f", str(NFT_CONF_FILE)], check=True)  # nosec
+            subprocess.run(["nft", "-f", str(NFT_CONF_FILE)], check=True)  # nosec  # noqa: S607
             logger.info("Applied nftables rules successfully.")
         except subprocess.CalledProcessError as e:
             logger.error("Failed to apply nftables rules: %s", e)
@@ -448,8 +448,8 @@ class AproxyManager:
         """
         try:
             # nosec B404,B603,B607: trusted binary, no untrusted input
-            subprocess.run(["nft", "flush", "table", "ip", "aproxy"], check=True)  # nosec
-            subprocess.run(["nft", "delete", "table", "ip", "aproxy"], check=True)  # nosec
+            subprocess.run(["nft", "flush", "table", "ip", "aproxy"], check=True)  # nosec  # noqa: S607
+            subprocess.run(["nft", "delete", "table", "ip", "aproxy"], check=True)  # nosec  # noqa: S607
             logger.info("Cleaned up nftables rules.")
         except subprocess.CalledProcessError as e:
             logger.error("Failed to clean up nftables rules: %s", e)

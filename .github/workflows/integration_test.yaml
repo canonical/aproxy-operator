@@ -28,6 +28,7 @@ jobs:
       juju-channel: "3/stable"
       provider: "lxd"
       extra-arguments: "--base ${{ matrix.base }}"
+      with-uv: true
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:
