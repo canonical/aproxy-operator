@@ -60,7 +60,9 @@ def aproxy_charm_file_fixture(pytestconfig: pytest.Config) -> str:
 
 
 @pytest.fixture(name="juju", scope="module")
-def juju_fixture(request: pytest.FixtureRequest) -> typing.Generator[jubilant.Juju, None, None]:
+def juju_fixture(
+    request: pytest.FixtureRequest,
+) -> typing.Generator[jubilant.Juju, None, None]:
     """Provide a Juju model for tests."""
 
     def show_debug_log(juju: jubilant.Juju) -> None:
@@ -89,7 +91,10 @@ def juju_fixture(request: pytest.FixtureRequest) -> typing.Generator[jubilant.Ju
 
 @pytest.fixture(name="deploy_charms", scope="module")
 def deploy_charms_fixture(
-    juju: jubilant.Juju, aproxy_charm_file: str, tinyproxy_url: str, pytestconfig: pytest.Config
+    juju: jubilant.Juju,
+    aproxy_charm_file: str,
+    tinyproxy_url: str,
+    pytestconfig: pytest.Config,
 ):
     """Deploy principal and subordinate charms for integration tests.
 
@@ -145,7 +150,9 @@ class App:
         Returns:
             The command's standard output.
         """
-        unit_name = self.get_leader_unit() if unit_num is None else f"{self.name}/{unit_num}"
+        unit_name = (
+            self.get_leader_unit() if unit_num is None else f"{self.name}/{unit_num}"
+        )
         return self._juju.ssh(target=unit_name, command=cmd)
 
 
@@ -162,9 +169,7 @@ def aproxy_app_fixture(juju: jubilant.Juju, deploy_charms) -> App:
 
 
 @pytest.fixture(name="tinyproxy_url", scope="module")
-def get_tinyproxy_url(juju):
-    """Deploy Tinyproxy and return its URL."""
-    base = "ubuntu@" + subprocess.check_output(["lsb_release", "-rs"]).strip().decode(  # nosec
-        "utf-8"
-    )
-    return deploy_tinyproxy(juju, base=base)
+def get_tinyproxy_url(juju, pytestconfig: pytest.Config):
+    """Deploy Tinyproxy and return its URL, matching the requested base."""
+    base = pytestconfig.getoption("--base", default="24.04")
+    return deploy_tinyproxy(juju, base=f"ubuntu@{base}")
