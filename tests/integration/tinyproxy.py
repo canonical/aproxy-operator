@@ -70,6 +70,12 @@ def deploy_tinyproxy(juju: jubilant.Juju, base: str) -> str:
         channel="latest/edge",
         base=base,
         config={"src-overwrite": json.dumps({"any_charm.py": any_charm_py})},
+        constraints={
+            "root-disk": 20 * 1024,
+            "mem": 2 * 1024,
+            "virt-type": "virtual-machine",
+            "cores": 2,
+        },
     )
 
     # Wait until the service is up

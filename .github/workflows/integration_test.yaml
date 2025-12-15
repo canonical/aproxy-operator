@@ -6,17 +6,7 @@ on:
     - cron: "0 15 * * SAT"
 
 jobs:
-  build-matrix:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - base: "20.04"
-            index: 0
-          - base: "22.04"
-            index: 1
-          - base: "24.04"
-            index: 2
+  build-charms:
     runs-on: [self-hosted, edge]
     steps:
       - uses: actions/checkout@v6.0.1
@@ -27,14 +17,12 @@ jobs:
           else
             sudo snap install charmcraft --classic --channel=latest/stable
           fi
-      - name: Clean previous charm builds
-        run: rm -f aproxy_*.charm
-      - name: Pack charm for base ${{ matrix.base }}
-        run: charmcraft pack --bases-index=${{ matrix.index }}
+      - name: Pack charm for all bases
+        run: charmcraft pack
 
   integration-tests:
     needs:
-      - build-matrix
+      - build-charms
     strategy:
       fail-fast: false
       matrix:
