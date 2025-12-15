@@ -21,7 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.1
       - name: Ensure charmcraft is available
-        run: sudo snap refresh charmcraft --classic --channel=latest/stable
+        run: |
+          if snap list charmcraft >/dev/null 2>&1; then
+            sudo snap refresh charmcraft --classic --channel=latest/stable
+          else
+            sudo snap install charmcraft --classic --channel=latest/stable
+          fi
       - name: Clean previous charm builds
         run: rm -f aproxy_*.charm
       - name: Pack charm for base ${{ matrix.base }}
