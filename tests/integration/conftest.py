@@ -150,9 +150,7 @@ class App:
         Returns:
             The command's standard output.
         """
-        unit_name = (
-            self.get_leader_unit() if unit_num is None else f"{self.name}/{unit_num}"
-        )
+        unit_name = self.get_leader_unit() if unit_num is None else f"{self.name}/{unit_num}"
         return self._juju.ssh(target=unit_name, command=cmd)
 
 
