@@ -118,16 +118,12 @@ class AproxyConfig(BaseModel):
         raw_exclude_addresses = str(conf.get("exclude-addresses-from-proxy", ""))
         if raw_exclude_addresses:
             exclude_addresses = [
-                entry.strip()
-                for entry in raw_exclude_addresses.split(",")
-                if entry.strip()
+                entry.strip() for entry in raw_exclude_addresses.split(",") if entry.strip()
             ]
 
         # Parse intercept ports
         intercept_ports_raw = str(conf.get("intercept-ports", ""))
-        intercept_ports_list = (
-            intercept_ports_raw.split(",") if intercept_ports_raw else []
-        )
+        intercept_ports_list = intercept_ports_raw.split(",") if intercept_ports_raw else []
 
         # Build the AproxyConfig instance and validate the fields
         try:
@@ -140,8 +136,7 @@ class AproxyConfig(BaseModel):
         except ValidationError as exc:
             # Format each error as "<field>: <message>"
             error_field_str = ", ".join(
-                f"{'.'.join(map(str, err['loc']))}: {err['msg']}"
-                for err in exc.errors()
+                f"{'.'.join(map(str, err['loc']))}: {err['msg']}" for err in exc.errors()
             )
             raise InvalidCharmConfigError(error_field_str) from exc
 
@@ -150,11 +145,7 @@ class AproxyConfig(BaseModel):
     @field_validator("proxy_address")
     def _validate_proxy_address(cls, proxy_address: str) -> str:  # noqa: N805
         """Validate that proxy_address is a non-empty string."""
-        if (
-            not proxy_address
-            or not isinstance(proxy_address, str)
-            or not proxy_address.strip()
-        ):
+        if not proxy_address or not isinstance(proxy_address, str) or not proxy_address.strip():
             raise ValueError("target proxy address is required to be non-empty string")
         return proxy_address.strip()
 
@@ -162,15 +153,11 @@ class AproxyConfig(BaseModel):
     def _validate_proxy_port(cls, proxy_port: int) -> int:  # noqa: N805
         """Validate that proxy_port is a valid port number."""
         if not 0 < proxy_port < 65536:
-            raise ValueError(
-                f"proxy port must be between 1 and 65535 instead of {proxy_port}"
-            )
+            raise ValueError(f"proxy port must be between 1 and 65535 instead of {proxy_port}")
         return proxy_port
 
     @field_validator("exclude_addresses")
-    def _validate_exclude_addresses(
-        cls, exclude_addresses: List[str]
-    ) -> List[str]:  # noqa: N805
+    def _validate_exclude_addresses(cls, exclude_addresses: List[str]) -> List[str]:  # noqa: N805
         """Validate exclude_addresses entries are valid IPs, CIDRs, or hostnames."""
         valid_exclude_addresses = []
         for entry in exclude_addresses:
@@ -186,9 +173,7 @@ class AproxyConfig(BaseModel):
                 if HOSTNAME_PATTERN.match(entry):
                     valid_exclude_addresses.append(entry)
                 else:
-                    raise ValueError(
-                        f"invalid exclude_addresses entry {entry}"
-                    ) from exc
+                    raise ValueError(f"invalid exclude_addresses entry {entry}") from exc
         return valid_exclude_addresses
 
     @field_validator("intercept_ports_list")
@@ -219,10 +204,7 @@ class AproxyConfig(BaseModel):
             else:
                 merged_port[-1][1] = max(merged_port[-1][1], end)
 
-        return [
-            f"{start}-{end}" if start != end else str(start)
-            for start, end in merged_port
-        ]
+        return [f"{start}-{end}" if start != end else str(start) for start, end in merged_port]
 
     @classmethod
     def _convert_ports_to_ranges(cls, ports: List[str]) -> List[tuple]:
@@ -236,9 +218,7 @@ class AproxyConfig(BaseModel):
             except ValueError as exc:
                 raise ValueError(f"invalid port range: {item}") from exc
             if not 1 <= start <= end <= 65535:
-                raise ValueError(
-                    f"port range must be between 1 and 65535 instead of {item}"
-                )
+                raise ValueError(f"port range must be between 1 and 65535 instead of {item}")
             ranges.append((start, end))
 
         return ranges
@@ -316,15 +296,11 @@ class AproxyManager:
             current_proxy = ""
         target_proxy = f"{self.config.proxy_address}:{self.config.proxy_port}"
         if current_proxy == target_proxy:
-            logger.info(
-                "Proxy is already set to %s, skipping reconfiguration", target_proxy
-            )
+            logger.info("Proxy is already set to %s, skipping reconfiguration", target_proxy)
             return
 
         # Check if target proxy is reachable
-        if not self._is_proxy_reachable(
-            self.config.proxy_address, self.config.proxy_port
-        ):
+        if not self._is_proxy_reachable(self.config.proxy_address, self.config.proxy_port):
             logger.error("Proxy is not reachable at %s", target_proxy)
             raise ConnectionError(f"Proxy is not reachable at {target_proxy}")
 
@@ -423,9 +399,7 @@ class AproxyManager:
         }}
         """
 
-    def check_relation_availability(
-        self,
-    ) -> tuple[ops.model.Relation, ops.model.Binding]:
+    def check_relation_availability(self) -> tuple[ops.model.Relation, ops.model.Binding]:
         """Check if the Juju relation is available for topology resolution.
 
         Raises:
@@ -458,15 +432,11 @@ class AproxyManager:
         """
         # Write nft config to disk
         NFT_CONF_FILE.parent.mkdir(parents=True, exist_ok=True)
-        NFT_CONF_FILE.write_text(
-            textwrap.dedent(self._render_nft_rules()), encoding="utf-8"
-        )
+        NFT_CONF_FILE.write_text(textwrap.dedent(self._render_nft_rules()), encoding="utf-8")
 
         try:
             # nosec B404,B603,B607: calling trusted system binary with predefined args
-            subprocess.run(
-                ["nft", "-f", str(NFT_CONF_FILE)], check=True
-            )  # nosec  # noqa: S607
+            subprocess.run(["nft", "-f", str(NFT_CONF_FILE)], check=True)  # nosec  # noqa: S607
             logger.info("Applied nftables rules successfully.")
         except subprocess.CalledProcessError as e:
             logger.error("Failed to apply nftables rules: %s", e)
@@ -480,12 +450,8 @@ class AproxyManager:
         """
         try:
             # nosec B404,B603,B607: trusted binary, no untrusted input
-            subprocess.run(
-                ["nft", "flush", "table", "ip", "aproxy"], check=True
-            )  # nosec  # noqa: S607
-            subprocess.run(
-                ["nft", "delete", "table", "ip", "aproxy"], check=True
-            )  # nosec  # noqa: S607
+            subprocess.run(["nft", "flush", "table", "ip", "aproxy"], check=True)  # nosec  # noqa: S607
+            subprocess.run(["nft", "delete", "table", "ip", "aproxy"], check=True)  # nosec  # noqa: S607
             logger.info("Cleaned up nftables rules.")
         except subprocess.CalledProcessError as e:
             logger.error("Failed to clean up nftables rules: %s", e)
