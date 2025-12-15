@@ -105,7 +105,7 @@ def deploy_charms_fixture(
         pytestconfig: Pytest configuration object.
     """
     base = pytestconfig.getoption("--base", default="24.04")
-    juju.deploy("ubuntu", base=f"ubuntu@{base}")
+    juju.deploy("ubuntu", base=f"ubuntu@{base}", constraints={"virt-type": "virtual-machine"})
     juju.deploy(aproxy_charm_file)
     juju.integrate("ubuntu", "aproxy")
     juju.cli("config", "aproxy", f"proxy-address={tinyproxy_url}:8888")
