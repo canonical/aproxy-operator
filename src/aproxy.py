@@ -2,6 +2,8 @@
 # See LICENSE file for licensing details.
 
 # pylint: disable=no-self-argument
+from __future__ import annotations
+
 """Aproxy controller.
 
 Contains:
