@@ -3,10 +3,32 @@ name: Integration tests
 on:
   pull_request:
   schedule:
-  - cron: "0 15 * * SAT"
+    - cron: "0 15 * * SAT"
 
 jobs:
+  build-charms:
+    runs-on: [self-hosted, edge]
+    steps:
+      - uses: actions/checkout@v6.0.1
+      - name: Ensure charmcraft is available
+        run: |
+          if snap list charmcraft >/dev/null 2>&1; then
+            sudo snap refresh charmcraft --classic --channel=latest/stable
+          else
+            sudo snap install charmcraft --classic --channel=latest/stable
+          fi
+      - name: Pack charm for all bases
+        run: charmcraft pack
+
   integration-tests:
+    needs:
+      - build-charms
+    strategy:
+      fail-fast: false
+      matrix:
+        base:
+          - "22.04"
+          - "24.04"
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     permissions:
@@ -20,9 +42,10 @@ jobs:
       self-hosted-runner-label: "edge"
       juju-channel: "3/stable"
       provider: "lxd"
+      extra-arguments: "--base ${{ matrix.base }}"
       with-uv: true
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:
-    - integration-tests
+      - integration-tests
     uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main

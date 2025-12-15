@@ -6,9 +6,11 @@ name = "aproxy-operator"
 version = "0.0.0"
 description = "A subordinate charm that deploys the aproxy application."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.8.6"
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -16,9 +18,9 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-  "charmlibs-snap==1.0.1",
-  "ops==3.4.0",
-  "pydantic==2.12.5",
+  "charmlibs-snap>=0.8.0,<2",
+  "ops>=2.23.0",
+  "pydantic>=2.10.6",
 ]
 
 [dependency-groups]
