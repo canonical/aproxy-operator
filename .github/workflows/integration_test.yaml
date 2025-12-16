@@ -13,12 +13,12 @@ jobs:
       - name: Ensure charmcraft is available
         run: |
           if snap list charmcraft >/dev/null 2>&1; then
-            sudo snap refresh charmcraft --classic --channel=latest/stable
+            sudo snap refresh charmcraft --classic --channel=3.x/stable
           else
-            sudo snap install charmcraft --classic --channel=latest/stable
+            sudo snap install charmcraft --classic --channel=3.x/stable
           fi
-      - name: Pack charm for ubuntu@20.04
-        run: charmcraft pack --platform ubuntu@20.04:amd64
+      - name: Pack charm
+        run: charmcraft pack
 
   integration-tests:
     strategy:
