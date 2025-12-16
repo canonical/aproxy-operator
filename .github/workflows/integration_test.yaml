@@ -6,7 +6,7 @@ on:
     - cron: "0 15 * * SAT"
 
 jobs:
-  build-charm-focal:
+  build-charms:
     runs-on: [self-hosted, edge]
     steps:
       - uses: actions/checkout@v6.0.1
@@ -17,7 +17,7 @@ jobs:
           else
             sudo snap install charmcraft --classic --channel=3.x/stable
           fi
-      - name: Pack charm
+      - name: Pack charm for all bases
         run: charmcraft pack
 
   integration-tests:
