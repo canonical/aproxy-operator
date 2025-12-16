@@ -6,7 +6,7 @@ on:
     - cron: "0 15 * * SAT"
 
 jobs:
-  build-charms:
+  build-charm-20.04:
     runs-on: [self-hosted, edge]
     steps:
       - uses: actions/checkout@v6.0.1
@@ -17,8 +17,8 @@ jobs:
           else
             sudo snap install charmcraft --classic --channel=latest/stable
           fi
-      - name: Pack charm for all bases
-        run: charmcraft pack
+      - name: Pack charm for ubuntu@20.04
+        run: charmcraft pack --bases-index 0 --platform amd64 --build-for amd64
 
   integration-tests:
     strategy:
