@@ -1,7 +1,6 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# pylint: disable=no-self-argument
 """Aproxy controller.
 
 Contains:
@@ -9,6 +8,9 @@ Contains:
  - AproxyManager: install/remove/configure aproxy snap, build & apply nft configuration,
    create a systemd unit that re-applies nft configuration on boot for persistence.
 """
+
+# pylint: disable=no-self-argument
+from __future__ import annotations
 
 import ipaddress
 import logging
@@ -82,7 +84,7 @@ class AproxyConfig(BaseModel):
     intercept_ports_list: List[str]
 
     @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "AproxyConfig":
+    def from_charm(cls, charm: ops.CharmBase) -> AproxyConfig:
         """Load and validate configuration from charm config.
 
         Args:
