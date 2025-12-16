@@ -13,9 +13,9 @@ jobs:
       - name: Ensure charmcraft is available
         run: |
           if snap list charmcraft >/dev/null 2>&1; then
-            sudo snap refresh charmcraft --classic --channel=3.x/stable
+            sudo snap refresh charmcraft --classic --channel=latest/stable
           else
-            sudo snap install charmcraft --classic --channel=3.x/stable
+            sudo snap install charmcraft --classic --channel=latest/stable
           fi
       - name: Pack charm for all bases
         run: charmcraft pack
