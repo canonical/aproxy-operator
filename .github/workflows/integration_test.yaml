@@ -18,11 +18,9 @@ jobs:
             sudo snap install charmcraft --classic --channel=latest/stable
           fi
       - name: Pack charm for all bases
-        run: charmcraft pack --bases-index 0
+        run: charmcraft pack --use-lxd
 
   integration-tests:
-    needs:
-      - build-charms
     strategy:
       fail-fast: false
       matrix:
