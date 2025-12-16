@@ -16,6 +16,7 @@ import ipaddress
 import logging
 import os
 import re
+import shutil
 import socket
 import subprocess  # nosec: B404
 import textwrap
@@ -399,6 +400,23 @@ class AproxyManager:
         }}
         """
 
+    def _ensure_nftables_installed(self) -> None:
+        """Ensure the nft binary is available before applying rules.
+
+        Raises:
+            NftApplyError: If installing nftables package fails.
+        """
+        if shutil.which("nft"):
+            return
+
+        try:
+            # nosec B404,B603,B607: running trusted system package manager
+            subprocess.run(["apt-get", "update"], check=True)  # nosec  # noqa: S607
+            subprocess.run(["apt-get", "install", "-y", "nftables"], check=True)  # nosec  # noqa: S607
+        except subprocess.CalledProcessError as exc:
+            logger.error("Failed to install nftables package: %s", exc)
+            raise NftApplyError(exc, "nftables package installation failed") from exc
+
     def check_relation_availability(self) -> tuple[ops.model.Relation, ops.model.Binding]:
         """Check if the Juju relation is available for topology resolution.
 
@@ -430,6 +448,8 @@ class AproxyManager:
         Raises:
             NftApplyError: If applying the nft command fails.
         """
+        self._ensure_nftables_installed()
+
         # Write nft config to disk
         NFT_CONF_FILE.parent.mkdir(parents=True, exist_ok=True)
         NFT_CONF_FILE.write_text(textwrap.dedent(self._render_nft_rules()), encoding="utf-8")
