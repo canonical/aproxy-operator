@@ -17,3 +17,5 @@ Place any unreleased changes here, that are subject to release in coming version
 ## 2025-10-9
 
 - Added core functionality and tests to the charm.
+
+- Moved charm-architecture.md from Explanation to Reference category.

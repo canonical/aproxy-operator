@@ -96,7 +96,7 @@ If the charm uses metrics, include a list under reference/metrics.md and link th
 If the charm uses containers, you may include text here like:
 
 Inside the above mentioned containers, additional Pebble layers are defined in order to provide metrics.
-See [metrics](link-to-metrics-document) for more information.
+See [metrics](../explanation/link-to-metrics-document) for more information.
 -->
 
 ## Juju events
