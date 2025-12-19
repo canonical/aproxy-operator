@@ -16,7 +16,6 @@ import ipaddress
 import logging
 import os
 import re
-import shutil
 import socket
 import subprocess  # nosec: B404
 import textwrap
@@ -406,13 +405,12 @@ class AproxyManager:
         Raises:
             NftApplyError: If installing nftables package fails.
         """
-        if shutil.which("nft"):
+        if Path("/usr/sbin/nft").exists():
             return
 
         try:
-            # nosec B404,B603,B607: running trusted system package manager
-            subprocess.run(["apt-get", "update"], check=True)  # nosec  # noqa: S607
-            subprocess.run(["apt-get", "install", "-y", "nftables"], check=True)  # nosec  # noqa: S607
+            subprocess.run(["/usr/bin/apt-get", "update"], check=True)  # nosec B603
+            subprocess.run(["/usr/bin/apt-get", "install", "-y", "nftables"], check=True)  # nosec B603
         except subprocess.CalledProcessError as exc:
             logger.error("Failed to install nftables package: %s", exc)
             raise NftApplyError(exc, "nftables package installation failed") from exc
@@ -455,8 +453,7 @@ class AproxyManager:
         NFT_CONF_FILE.write_text(textwrap.dedent(self._render_nft_rules()), encoding="utf-8")
 
         try:
-            # nosec B404,B603,B607: calling trusted system binary with predefined args
-            subprocess.run(["nft", "-f", str(NFT_CONF_FILE)], check=True)  # nosec  # noqa: S607
+            subprocess.run(["/usr/sbin/nft", "-f", str(NFT_CONF_FILE)], check=True)  # nosec B603
             logger.info("Applied nftables rules successfully.")
         except subprocess.CalledProcessError as e:
             logger.error("Failed to apply nftables rules: %s", e)
@@ -469,9 +466,8 @@ class AproxyManager:
             NftCleanupError: If cleaning up the nft command fails.
         """
         try:
-            # nosec B404,B603,B607: trusted binary, no untrusted input
-            subprocess.run(["nft", "flush", "table", "ip", "aproxy"], check=True)  # nosec  # noqa: S607
-            subprocess.run(["nft", "delete", "table", "ip", "aproxy"], check=True)  # nosec  # noqa: S607
+            subprocess.run(["/usr/sbin/nft", "flush", "table", "ip", "aproxy"], check=True)  # nosec B603
+            subprocess.run(["/usr/sbin/nft", "delete", "table", "ip", "aproxy"], check=True)  # nosec B603
             logger.info("Cleaned up nftables rules.")
         except subprocess.CalledProcessError as e:
             logger.error("Failed to clean up nftables rules: %s", e)
