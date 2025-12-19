@@ -4,14 +4,16 @@
 # pylint: disable=unused-argument
 """Fixtures for charm tests."""
 
-# nosec B404: subprocess usage is intentional and safe (predefined executables only).
-import subprocess  # nosec
+import subprocess  # nosec B404
 
 import pytest
 from charmlibs import snap
 
 from aproxy import NFT_CONF_FILE
 from errors import NftApplyError, NftCleanupError
+
+# Use hardcoded absolute path for snap binary
+_SNAP_BIN = "/usr/bin/snap"
 
 
 class FakeSnap:
@@ -30,10 +32,10 @@ class FakeSnap:
         """
         if state == snap.SnapState.Latest:
             # call through to subprocess, which patch fixture will mock
-            subprocess.run(["snap", "install", "aproxy"], check=True)  # nosec
+            subprocess.run([_SNAP_BIN, "install", "aproxy"], check=True)  # nosec B603
             self.present = True
         elif state == snap.SnapState.Absent:
-            subprocess.run(["snap", "remove", "aproxy"], check=True)  # nosec
+            subprocess.run([_SNAP_BIN, "remove", "aproxy"], check=True)  # nosec B603
             self.present = False
 
     def set(self, config: dict):
@@ -43,7 +45,7 @@ class FakeSnap:
             config: Dictionary of configuration key-value pairs.
         """
         args = [f"{k}={v}" for k, v in config.items()]
-        subprocess.run(["snap", "set", "aproxy", *args], check=True)  # nosec
+        subprocess.run([_SNAP_BIN, "set", "aproxy", *args], check=True)  # nosec B603
 
     def get(self, key: str, default=""):
         """Simulate getting snap configuration using subprocess.
@@ -58,12 +60,12 @@ class FakeSnap:
         if not self.present:
             return default
 
-        result = subprocess.run(
-            ["snap", "get", "aproxy", key],
+        result = subprocess.run(  # nosec B603
+            [_SNAP_BIN, "get", "aproxy", key],
             check=False,
             capture_output=True,
             text=True,
-        )  # nosec
+        )
 
         value = result.stdout.strip() if result.stdout else default
         return value if value else default
@@ -181,13 +183,26 @@ def patch_subprocess_failure(monkeypatch):
             Returns:
                 subprocess.CompletedProcess: Simulated successful command execution if no failure.
             """
-            if is_install_failure and cmd[:3] == ["snap", "install", "aproxy"]:
+            import os
+
+            # Extract binary name from absolute or relative path
+            binary = os.path.basename(cmd[0]) if cmd else ""
+
+            def matches_command(expected_binary: str, expected_args: list) -> bool:
+                """Check if command matches expected binary and arguments."""
+                return (
+                    len(cmd) >= len(expected_args) + 1
+                    and binary == expected_binary
+                    and cmd[1 : len(expected_args) + 1] == expected_args
+                )
+
+            if is_install_failure and matches_command("snap", ["install", "aproxy"]):
                 raise subprocess.CalledProcessError(1, cmd)
-            if is_set_failure and cmd[:3] == ["snap", "set", "aproxy"]:
+            if is_set_failure and matches_command("snap", ["set", "aproxy"]):
                 raise subprocess.CalledProcessError(1, cmd)
-            if is_nft_failure and cmd[0] == "nft":
+            if is_nft_failure and binary == "nft":
                 raise subprocess.CalledProcessError(1, cmd)
-            if is_remove_failure and cmd[:3] == ["snap", "remove", "aproxy"]:
+            if is_remove_failure and matches_command("snap", ["remove", "aproxy"]):
                 raise subprocess.CalledProcessError(1, cmd)
             return subprocess.CompletedProcess(cmd, 0)
 

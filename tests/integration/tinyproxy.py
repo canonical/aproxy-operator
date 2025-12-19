@@ -35,8 +35,8 @@ def deploy_tinyproxy(juju: jubilant.Juju, base: str) -> str:
 
         def _on_install(self, _):
             self.unit.status = ops.MaintenanceStatus("downloading tinyproxy")
-            subprocess.check_call(["apt-get", "update"])
-            subprocess.check_call(["apt-get", "install", "-y", "tinyproxy"])
+            subprocess.check_call(["/usr/bin/apt-get", "update"])
+            subprocess.check_call(["/usr/bin/apt-get", "install", "-y", "tinyproxy"])
 
             self.unit.status = ops.MaintenanceStatus("configuring tinyproxy")
             with open("/etc/tinyproxy/tinyproxy.conf", "w") as f:
@@ -57,7 +57,7 @@ def deploy_tinyproxy(juju: jubilant.Juju, base: str) -> str:
                     )
                 )
 
-            subprocess.check_call(["systemctl", "restart", "tinyproxy"])
+            subprocess.check_call(["/usr/bin/systemctl", "restart", "tinyproxy"])
             self.unit.set_ports(8888)
             self.unit.status = ops.ActiveStatus()
     """

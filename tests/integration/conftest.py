@@ -5,9 +5,7 @@
 """Fixtures for charm tests."""
 
 import pathlib
-
-# nosec B404: subprocess usage is intentional and safe (predefined executables only).
-import subprocess  # nosec
+import subprocess  # nosec B404
 import typing
 
 import jubilant
@@ -41,12 +39,12 @@ def aproxy_charm_file_fixture(pytestconfig: pytest.Config) -> str:
     bases_index = base_index_map.get(base, 2)
 
     try:
-        subprocess.run(
-            ["charmcraft", "pack", f"--bases-index={bases_index}"],
+        subprocess.run(  # nosec B603
+            ["/usr/bin/charmcraft", "pack", f"--bases-index={bases_index}"],
             check=True,
             capture_output=True,
             text=True,
-        )  # nosec B603, B607
+        )
     except subprocess.CalledProcessError as exc:
         raise OSError(f"Error packing charm: {exc}; Stderr:\n{exc.stderr}") from None
 

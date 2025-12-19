@@ -3,7 +3,7 @@
 
 [project]
 name = "aproxy-operator"
-version = "0.0.0"
+version = "0.0.1"
 description = "A subordinate charm that deploys the aproxy application."
 readme = "README.md"
 requires-python = ">=3.8.6"

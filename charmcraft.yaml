@@ -34,11 +34,11 @@ requires:
     scope: container
 
 parts:
-  charm:
+  aproxy-operator:
     source: .
     plugin: uv
     build-snaps:
-    - astral-uv
+      - astral-uv
 config:
   options:
     proxy-address:
