@@ -40,26 +40,13 @@ def test_traffic_routed_through_aproxy(juju, principal_app):
     assert result.strip() == "200", f"Expected 200 from local server, got {result}"
 
 
-def test_cleanup_on_removal(juju, aproxy_app, principal_app):
-    """
-    arrange: ubuntu with aproxy subordinate.
-    act: remove aproxy charm.
-    assert: no leftover proxy env vars on principal unit.
-    """
-    juju.remove_application(aproxy_app.name)
-    juju.wait(jubilant.all_active, timeout=10 * 60)
-
-    stdout = principal_app.ssh("env | grep -i proxy || true")
-    assert stdout.strip() == ""
-
-
 def test_aproxy_reads_model_proxy(juju, aproxy_app, tinyproxy_url):
     """
     arrange: deploy aproxy with proxy-address config set, then unset it.
     act: verify aproxy is blocked, then set juju model proxy config.
     assert: aproxy reads proxy values from the model config.
     """
-    juju.cli("config", "aproxy", "proxy-address=")
+    juju.cli("config", "aproxy", "--reset", "proxy-address")
     juju.wait_for_unit_status(
         "aproxy/0",
         "blocked",
@@ -80,3 +67,16 @@ def test_aproxy_reads_model_proxy(juju, aproxy_app, tinyproxy_url):
         f"Service ready on target proxy http://{tinyproxy_url}:8888"
         in unit.workload_status.message
     )
+
+
+def test_cleanup_on_removal(juju, aproxy_app, principal_app):
+    """
+    arrange: ubuntu with aproxy subordinate.
+    act: remove aproxy charm.
+    assert: no leftover proxy env vars on principal unit.
+    """
+    juju.remove_application(aproxy_app.name)
+    juju.wait(jubilant.all_active, timeout=10 * 60)
+
+    stdout = principal_app.ssh("env | grep -i proxy || true")
+    assert stdout.strip() == ""
