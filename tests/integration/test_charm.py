@@ -59,7 +59,7 @@ def test_aproxy_reads_model_proxy(juju, aproxy_app, tinyproxy_url):
     act: verify aproxy is blocked, then set juju model proxy config.
     assert: aproxy reads proxy values from the model config.
     """
-    juju.cli("config", "aproxy", "--reset", "proxy-address")
+    juju.cli("config", "aproxy", "proxy-address=")
     juju.wait_for_unit_status(
         "aproxy/0",
         "blocked",
