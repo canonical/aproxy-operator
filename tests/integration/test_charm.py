@@ -48,11 +48,6 @@ def test_aproxy_reads_model_proxy(juju, aproxy_app, tinyproxy_url):
     """
     juju.cli("config", "aproxy", "--reset", "proxy-address")
     juju.wait(lambda status: jubilant.any_blocked(status, "aproxy"), timeout=5 * 60)
-    juju.wait_for_unit_status(
-        "aproxy/0",
-        "blocked",
-        timeout=5 * 60,
-    )
 
     juju.cli("model-config", f"juju-http-proxy=http://{tinyproxy_url}:8888")
     juju.cli("model-config", f"juju-https-proxy=https://{tinyproxy_url}:8888")
