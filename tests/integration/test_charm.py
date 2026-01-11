@@ -47,6 +47,7 @@ def test_aproxy_reads_model_proxy(juju, aproxy_app, tinyproxy_url):
     assert: aproxy reads proxy values from the model config.
     """
     juju.cli("config", "aproxy", "--reset", "proxy-address")
+    juju.wait(lambda status: jubilant.any_blocked(status, "aproxy"), timeout=5 * 60)
     juju.wait_for_unit_status(
         "aproxy/0",
         "blocked",
@@ -56,16 +57,11 @@ def test_aproxy_reads_model_proxy(juju, aproxy_app, tinyproxy_url):
     juju.cli("model-config", f"juju-http-proxy=http://{tinyproxy_url}:8888")
     juju.cli("model-config", f"juju-https-proxy=https://{tinyproxy_url}:8888")
 
-    juju.wait_for_unit_status(
-        "aproxy/0",
-        "active",
-        timeout=5 * 60,
-    )
+    juju.wait(jubilant.all_active, timeout=5 * 60)
     units = juju.status().get_units(aproxy_app.name)
-    unit = units["aproxy/0"]
-    assert (
-        f"Service ready on target proxy http://{tinyproxy_url}:8888"
-        in unit.workload_status.message
+    assert all(
+        f"Service ready on target proxy http://{tinyproxy_url}:8888" in u.workload_status.message
+        for u in units.values()
     )
 
 
