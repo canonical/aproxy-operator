@@ -51,3 +51,32 @@ def test_cleanup_on_removal(juju, aproxy_app, principal_app):
 
     stdout = principal_app.ssh("env | grep -i proxy || true")
     assert stdout.strip() == ""
+
+
+def test_aproxy_reads_model_proxy(juju, aproxy_app, tinyproxy_url):
+    """
+    arrange: deploy aproxy with proxy-address config set, then unset it.
+    act: verify aproxy is blocked, then set juju model proxy config.
+    assert: aproxy reads proxy values from the model config.
+    """
+    juju.cli("config", "aproxy", "--reset", "proxy-address")
+    juju.wait_for_unit_status(
+        "aproxy/0",
+        "blocked",
+        timeout=5 * 60,
+    )
+
+    juju.cli("model-config", f"juju-http-proxy=http://{tinyproxy_url}:8888")
+    juju.cli("model-config", f"juju-https-proxy=https://{tinyproxy_url}:8888")
+
+    juju.wait_for_unit_status(
+        "aproxy/0",
+        "active",
+        timeout=5 * 60,
+    )
+    units = juju.status().get_units(aproxy_app.name)
+    unit = units["aproxy/0"]
+    assert (
+        f"Service ready on target proxy http://{tinyproxy_url}:8888"
+        in unit.workload_status.message
+    )
