@@ -52,7 +52,7 @@ def test_aproxy_reads_model_proxy(juju, aproxy_app, tinyproxy_url):
     juju.wait(jubilant.all_active, timeout=5 * 60)
     units = juju.status().get_units(aproxy_app.name)
     assert all(
-        f"Service ready on target proxy http://{tinyproxy_url}:8888" in u.workload_status.message
+        f"Service ready on target proxy {tinyproxy_url}:8888" in u.workload_status.message
         for u in units.values()
     )
 
