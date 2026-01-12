@@ -40,6 +40,23 @@ def test_traffic_routed_through_aproxy(juju, principal_app):
     assert result.strip() == "200", f"Expected 200 from local server, got {result}"
 
 
+def test_aproxy_reads_model_proxy(juju, aproxy_app, tinyproxy_url):
+    """
+    arrange: deploy aproxy with proxy-address configured.
+    act: set the model config juju-http-proxy, then unset aproxy proxy-address.
+    assert: aproxy reads proxy values from the model config.
+    """
+    juju.cli("model-config", f"juju-http-proxy=http://{tinyproxy_url}:8888")
+    juju.cli("config", "aproxy", "--reset", "proxy-address")
+
+    juju.wait(jubilant.all_active, timeout=5 * 60)
+    units = juju.status().get_units(aproxy_app.name)
+    assert all(
+        f"Service ready on target proxy {tinyproxy_url}:8888" in u.workload_status.message
+        for u in units.values()
+    )
+
+
 def test_cleanup_on_removal(juju, aproxy_app, principal_app):
     """
     arrange: ubuntu with aproxy subordinate.

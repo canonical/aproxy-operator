@@ -228,3 +228,21 @@ def test_stop_with_snap_removal_failure_should_succeed(patch_subprocess_failure,
 
     assert out.unit_status == testing.MaintenanceStatus("Aproxy interception service stopped.")
     assert "Failed to clean up aproxy or nftables" in caplog.text
+
+
+def test_install_with_juju_model_config_should_succeed(patch_proxy_check, monkeypatch):
+    """
+    arrange: declare a context without charm config, but set juju model config proxy values.
+    act: run the install event.
+    assert: status is active with a message indicating the interception service started.
+    """
+    monkeypatch.setenv("JUJU_CHARM_HTTPS_PROXY", "https://juju.proxy:3128")
+    monkeypatch.setenv("JUJU_CHARM_HTTP_PROXY", "http://juju.proxy:3128")
+
+    ctx = testing.Context(AproxyCharm)
+    state = testing.State(config={})
+    patch_proxy_check(is_reachable=True)
+
+    out = ctx.run(ctx.on.install(), state)
+
+    assert out.unit_status == testing.ActiveStatus("Service ready on target proxy juju.proxy:3128")

@@ -10,6 +10,10 @@ Each revision is versioned by the date of the revision.
 
 Place any unreleased changes here, that are subject to release in coming versions :).
 
+## 2025-01-11
+
+- Fixed the model config variable names for HTTP and HTTPS proxy.
+
 ## 2025-12-17
 
 - Moved charm-architecture.md from Explanation to Reference category.

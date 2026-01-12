@@ -233,8 +233,8 @@ class AproxyConfig(BaseModel):
         Returns:
             The proxy address (hostname or IP) if set, else an empty string.
         """
-        https_proxy = os.environ.get("JUJU_HTTPS_PROXY", "")
-        http_proxy = os.environ.get("JUJU_HTTP_PROXY", "")
+        https_proxy = os.environ.get("JUJU_CHARM_HTTPS_PROXY", "")
+        http_proxy = os.environ.get("JUJU_CHARM_HTTP_PROXY", "")
 
         proxy_conf = https_proxy or http_proxy or ""
 
