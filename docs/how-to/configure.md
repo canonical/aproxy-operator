@@ -44,7 +44,7 @@ juju config aproxy proxy-address="10.0.0.5:8080"
 
 ### `exclude-addresses-from-proxy`
 
-Comma-separated list of IP addresses or hostnames that should bypass the proxy. When this option is set, nftables rules are updated so that outbound traffic to the specified addresses is exempted from proxy interception.
+Comma-separated list of IP addresses that should bypass the proxy. When this option is set, nftables rules are updated so that outbound traffic to the specified addresses is exempted from proxy interception.
 
 - Default: `"127.0.0.1"`
 - Useful for excluding local or internal addresses that should bypass the proxy.
@@ -52,7 +52,7 @@ Comma-separated list of IP addresses or hostnames that should bypass the proxy. 
 Usage example:
 
 ```bash
-juju config aproxy exclude-addresses-from-proxy="127.0.0.1,example.local"
+juju config aproxy exclude-addresses-from-proxy="127.0.0.1,192.0.0.1"
 ```
 
 ### `intercept-ports`

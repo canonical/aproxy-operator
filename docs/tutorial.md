@@ -135,7 +135,7 @@ charm: aproxy
 settings:
   exclude-addresses-from-proxy:
     default: 127.0.0.1
-    description: Comma-separated list of IP or hostname addresses that should bypass
+    description: Comma-separated list of IP addresses that should bypass
       the proxy.
     source: default
     type: string

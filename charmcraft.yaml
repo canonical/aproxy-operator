@@ -53,7 +53,7 @@ config:
         For example, use "proxy.hostname:8080" instead of "http://proxy.hostname:8080".
       type: string
     exclude-addresses-from-proxy:
-      description: Comma-separated list of IP or hostname addresses that should bypass the proxy.
+      description: Comma-separated list of IP addresses that should bypass the proxy.
       default: "127.0.0.1"
       type: string
     intercept-ports:
