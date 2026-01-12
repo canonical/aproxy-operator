@@ -48,6 +48,24 @@ def test_install_without_proxy_config_should_fail(patch_proxy_check):
     )
 
 
+def test_install_with_uri_proxy_config_should_fail(patch_proxy_check):
+    """
+    arrange: declare a context and input state with uri proxy config.
+    act: run the install event.
+    assert: status is blocked with a message indicating invalid configuration.
+    """
+    ctx = testing.Context(AproxyCharm)
+    state = testing.State(config={"proxy-address": "http://target.proxy"})
+    patch_proxy_check(is_reachable=True)
+
+    out = ctx.run(ctx.on.install(), state)
+
+    assert out.unit_status == testing.BlockedStatus(
+        "Invalid charm configuration: "
+        + "proxy address must not include URI scheme prefix like http://"
+    )
+
+
 def test_install_with_snap_install_failure_should_fail(patch_subprocess_failure):
     """
     arrange: declare a context, input state with proxy config, and simulate snap install failure.

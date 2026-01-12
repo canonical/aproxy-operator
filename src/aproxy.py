@@ -101,6 +101,13 @@ class AproxyConfig(BaseModel):
         # Parse proxy-address and proxy port
         fallback_proxy = cls._get_principal_proxy_address()
         proxy_conf = str(conf.get("proxy-address", fallback_proxy)).strip()
+
+        # Check for URI scheme prefix before parsing port
+        if URI_SCHEME_PREFIX_RE.match(proxy_conf):
+            raise InvalidCharmConfigError(
+                "proxy address must not include URI scheme prefix like http://"
+            )
+
         proxy_address, proxy_port = proxy_conf, DEFAULT_PROXY_PORT
 
         if ":" in proxy_conf:
