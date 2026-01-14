@@ -48,21 +48,32 @@ def test_install_without_proxy_config_should_fail(patch_proxy_check):
     )
 
 
-def test_install_with_uri_proxy_config_should_fail(patch_proxy_check):
+@pytest.mark.parametrize(
+    "proxy_address,expected_scheme",
+    [
+        ("http://target.proxy", "http://"),
+        ("https://target.proxy", "https://"),
+        ("ftp://target.proxy", "ftp://"),
+        ("socks5://target.proxy", "socks5://"),
+    ],
+)
+def test_install_with_uri_proxy_config_should_fail(
+    patch_proxy_check, proxy_address, expected_scheme
+):
     """
     arrange: declare a context and input state with uri proxy config.
     act: run the install event.
     assert: status is blocked with a message indicating invalid configuration.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={"proxy-address": "http://target.proxy"})
+    state = testing.State(config={"proxy-address": proxy_address})
     patch_proxy_check(is_reachable=True)
 
     out = ctx.run(ctx.on.install(), state)
 
     assert out.unit_status == testing.BlockedStatus(
         "Invalid charm configuration: "
-        + "proxy address must not include URI scheme prefix like http://"
+        + f"proxy address must not include URI scheme prefix (found: {expected_scheme})"
     )
 
 
