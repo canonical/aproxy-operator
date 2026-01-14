@@ -103,9 +103,9 @@ class AproxyConfig(BaseModel):
         proxy_conf = str(conf.get("proxy-address", fallback_proxy)).strip()
 
         # Check for URI scheme prefix before parsing port
-        if URI_SCHEME_PREFIX_RE.match(proxy_conf):
+        if prefix := URI_SCHEME_PREFIX_RE.match(proxy_conf):
             raise InvalidCharmConfigError(
-                "proxy address must not include URI scheme prefix like http://"
+                f"proxy address must not include URI scheme prefix (found: {prefix.group(0)})"
             )
 
         proxy_address, proxy_port = proxy_conf, DEFAULT_PROXY_PORT
