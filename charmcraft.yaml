@@ -43,14 +43,17 @@ config:
   options:
     proxy-address:
       description: |
-        Configures the target proxy IP address and port for traffic forwarding.
+        Configures the target proxy IP/hostname address and port for traffic forwarding.
 
-        For example: "1.2.3.4:8888" or "1.2.3.4".
+        For example: "1.2.3.4:8888", "1.2.3.4", or "proxy.hostname".
         If no proxy is specified, the default proxy is the juju-https-proxy or juju-http-proxy model configuration data.
         If no port is specified, the default port value of 80 will be used.
+
+        Do not use URI scheme prefixes like "http://" or "https://".
+        For example, use "proxy.hostname:8080" instead of "http://proxy.hostname:8080".
       type: string
     exclude-addresses-from-proxy:
-      description: Comma-separated list of IP or hostname addresses that should bypass the proxy.
+      description: Comma-separated list of IP addresses that should bypass the proxy.
       default: "127.0.0.1"
       type: string
     intercept-ports:

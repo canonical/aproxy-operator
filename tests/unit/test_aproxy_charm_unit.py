@@ -48,6 +48,58 @@ def test_install_without_proxy_config_should_fail(patch_proxy_check):
     )
 
 
+@pytest.mark.parametrize(
+    "proxy_address,expected_scheme",
+    [
+        ("http://target.proxy", "http://"),
+        ("https://target.proxy", "https://"),
+        ("ftp://target.proxy", "ftp://"),
+        ("socks5://target.proxy", "socks5://"),
+    ],
+)
+def test_install_with_uri_proxy_config_should_fail(
+    patch_proxy_check, proxy_address, expected_scheme
+):
+    """
+    arrange: declare a context and input state with uri proxy config.
+    act: run the install event.
+    assert: status is blocked with a message indicating invalid configuration.
+    """
+    ctx = testing.Context(AproxyCharm)
+    state = testing.State(config={"proxy-address": proxy_address})
+    patch_proxy_check(is_reachable=True)
+
+    out = ctx.run(ctx.on.install(), state)
+
+    assert out.unit_status == testing.BlockedStatus(
+        "Invalid charm configuration: "
+        + f"proxy address must not include URI scheme prefix (found: {expected_scheme})"
+    )
+
+
+def test_install_with_hostname_exclude_address_should_fail(patch_proxy_check):
+    """
+    arrange: declare a context and input state with hostname as exclude address.
+    act: run the install event.
+    assert: status is blocked with a message indicating invalid configuration.
+    """
+    ctx = testing.Context(AproxyCharm)
+    state = testing.State(
+        config={
+            "proxy-address": "target.proxy",
+            "exclude-addresses-from-proxy": "invalid.hostname",
+        }
+    )
+    patch_proxy_check(is_reachable=True)
+
+    out = ctx.run(ctx.on.install(), state)
+
+    assert out.unit_status == testing.BlockedStatus(
+        "Invalid charm configuration: exclude_addresses: "
+        + "Value error, invalid.hostname must be an IP or CIDR, not a hostname"
+    )
+
+
 def test_install_with_snap_install_failure_should_fail(patch_subprocess_failure):
     """
     arrange: declare a context, input state with proxy config, and simulate snap install failure.

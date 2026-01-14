@@ -101,6 +101,13 @@ class AproxyConfig(BaseModel):
         # Parse proxy-address and proxy port
         fallback_proxy = cls._get_principal_proxy_address()
         proxy_conf = str(conf.get("proxy-address", fallback_proxy)).strip()
+
+        # Check for URI scheme prefix before parsing port
+        if prefix := URI_SCHEME_PREFIX_RE.match(proxy_conf):
+            raise InvalidCharmConfigError(
+                f"proxy address must not include URI scheme prefix (found: {prefix.group(0)})"
+            )
+
         proxy_address, proxy_port = proxy_conf, DEFAULT_PROXY_PORT
 
         if ":" in proxy_conf:
@@ -158,7 +165,7 @@ class AproxyConfig(BaseModel):
 
     @field_validator("exclude_addresses")
     def _validate_exclude_addresses(cls, exclude_addresses: List[str]) -> List[str]:  # noqa: N805
-        """Validate exclude_addresses entries are valid IPs, CIDRs, or hostnames."""
+        """Validate exclude_addresses entries are valid IPs or CIDRs."""
         valid_exclude_addresses = []
         for entry in exclude_addresses:
             entry = entry.strip()
@@ -169,9 +176,8 @@ class AproxyConfig(BaseModel):
                 ipaddress.ip_network(entry, strict=False)
                 valid_exclude_addresses.append(entry)
             except ValueError as exc:
-                # If not an IP/CIDR, check if it's a valid hostname
                 if HOSTNAME_PATTERN.match(entry):
-                    valid_exclude_addresses.append(entry)
+                    raise ValueError(f"{entry} must be an IP or CIDR, not a hostname") from exc
                 else:
                     raise ValueError(f"invalid exclude_addresses entry {entry}") from exc
         return valid_exclude_addresses
