@@ -22,7 +22,7 @@ def test_install_with_proxy_config_should_succeed(patch_proxy_check):
     assert: status is active with a message indicating the interception service started.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={"proxy-address": "target.proxy"})
+    state = testing.State(config={"channel": "latest/stable", "proxy-address": "target.proxy"})
     patch_proxy_check(is_reachable=True)
 
     out = ctx.run(ctx.on.install(), state)
@@ -37,7 +37,11 @@ def test_install_without_proxy_config_should_fail(patch_proxy_check):
     assert: status is blocked with a message indicating invalid configuration.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={})
+    state = testing.State(
+        config={
+            "channel": "latest/stable",
+        }
+    )
     patch_proxy_check(is_reachable=True)
 
     out = ctx.run(ctx.on.install(), state)
@@ -66,7 +70,7 @@ def test_install_with_uri_proxy_config_should_fail(
     assert: status is blocked with a message indicating invalid configuration.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={"proxy-address": proxy_address})
+    state = testing.State(config={"channel": "latest/stable", "proxy-address": proxy_address})
     patch_proxy_check(is_reachable=True)
 
     out = ctx.run(ctx.on.install(), state)
@@ -86,6 +90,7 @@ def test_install_with_hostname_exclude_address_should_fail(patch_proxy_check):
     ctx = testing.Context(AproxyCharm)
     state = testing.State(
         config={
+            "channel": "latest/stable",
             "proxy-address": "target.proxy",
             "exclude-addresses-from-proxy": "invalid.hostname",
         }
@@ -107,7 +112,7 @@ def test_install_with_snap_install_failure_should_fail(patch_subprocess_failure)
     assert: CalledProcessError should be thrown.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={"proxy-address": "target.proxy"})
+    state = testing.State(config={"channel": "latest/stable", "proxy-address": "target.proxy"})
     patch_subprocess_failure(is_install_failure=True)
 
     with pytest.raises(UncaughtCharmError) as excinfo:
@@ -123,7 +128,7 @@ def test_start_proxy_reachable_should_succeed(patch_proxy_check):
     assert: status is active with a message indicating the interception service started.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={"proxy-address": "target.proxy"})
+    state = testing.State(config={"channel": "latest/stable", "proxy-address": "target.proxy"})
     patch_proxy_check(is_reachable=True)
 
     out = ctx.run(ctx.on.start(), state)
@@ -138,7 +143,7 @@ def test_start_proxy_unreachable_should_fail(patch_proxy_check):
     assert: status is blocked with a message indicating the proxy is unreachable.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={"proxy-address": "target.proxy"})
+    state = testing.State(config={"channel": "latest/stable", "proxy-address": "target.proxy"})
     patch_proxy_check(is_reachable=False)
 
     out = ctx.run(ctx.on.start(), state)
@@ -155,7 +160,7 @@ def test_start_proxy_snap_config_failure_should_fail(patch_proxy_check, patch_su
     assert: CalledProcessError should be thrown.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={"proxy-address": "target.proxy"})
+    state = testing.State(config={"channel": "latest/stable", "proxy-address": "target.proxy"})
     patch_proxy_check(is_reachable=True)
     patch_subprocess_failure(is_set_failure=True)
 
@@ -172,7 +177,7 @@ def test_start_nftables_failure_should_fail(patch_proxy_check, patch_aproxy_nft_
     assert: status is blocked with a message indicating nft configuration failure.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={"proxy-address": "target.proxy"})
+    state = testing.State(config={"channel": "latest/stable", "proxy-address": "target.proxy"})
     patch_proxy_check(is_reachable=True)
     patch_aproxy_nft_failure(is_apply_failure=True)
 
@@ -190,7 +195,7 @@ def test_config_changed_should_succeed(patch_proxy_check):
     assert: status is active with a message indicating proxy reconfig and interception enabled.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={"proxy-address": "modified.proxy"})
+    state = testing.State(config={"channel": "latest/stable", "proxy-address": "modified.proxy"})
     patch_proxy_check(is_reachable=True)
 
     out = ctx.run(ctx.on.config_changed(), state)
@@ -207,7 +212,11 @@ def test_config_changed_without_proxy_config_should_fail():
     assert: status is blocked with a message indicating invalid configuration.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={})
+    state = testing.State(
+        config={
+            "channel": "latest/stable",
+        }
+    )
 
     out = ctx.run(ctx.on.config_changed(), state)
 
@@ -224,7 +233,7 @@ def test_config_changed_with_unreachable_proxy_should_fail(patch_proxy_check):
     assert: status is blocked with a message indicating the proxy is unreachable.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={"proxy-address": "modified.proxy"})
+    state = testing.State(config={"channel": "latest/stable", "proxy-address": "modified.proxy"})
     patch_proxy_check(is_reachable=False)
 
     out = ctx.run(ctx.on.config_changed(), state)
@@ -241,7 +250,7 @@ def test_stop_should_succeed():
     assert: status is active with a message indicating the interception service stopped.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={"proxy-address": "target.proxy"})
+    state = testing.State(config={"channel": "latest/stable", "proxy-address": "target.proxy"})
 
     out = ctx.run(ctx.on.stop(), state)
 
@@ -255,7 +264,7 @@ def test_stop_with_nftables_cleanup_failure_should_succeed(patch_aproxy_nft_fail
     assert: status is active with a log message indicating nftables cleanup failure.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={"proxy-address": "target.proxy"})
+    state = testing.State(config={"channel": "latest/stable", "proxy-address": "target.proxy"})
     patch_aproxy_nft_failure(is_cleanup_failure=True)
     caplog.set_level("ERROR")
 
@@ -272,7 +281,7 @@ def test_stop_with_snap_removal_failure_should_succeed(patch_subprocess_failure,
     assert: status is active with a log message indicating snap removal failure.
     """
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={"proxy-address": "target.proxy"})
+    state = testing.State(config={"channel": "latest/stable", "proxy-address": "target.proxy"})
     patch_subprocess_failure(is_remove_failure=True)
     caplog.set_level("ERROR")
 
@@ -292,7 +301,11 @@ def test_install_with_juju_model_config_should_succeed(patch_proxy_check, monkey
     monkeypatch.setenv("JUJU_CHARM_HTTP_PROXY", "http://juju.proxy:3128")
 
     ctx = testing.Context(AproxyCharm)
-    state = testing.State(config={})
+    state = testing.State(
+        config={
+            "channel": "latest/stable",
+        }
+    )
     patch_proxy_check(is_reachable=True)
 
     out = ctx.run(ctx.on.install(), state)

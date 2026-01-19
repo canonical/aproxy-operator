@@ -43,7 +43,6 @@ NFT_CONF_FILE = NFT_CONF_DIR / "nftables.conf"
 SYSTEMD_UNIT_PATH = Path("/etc/systemd/system/aproxy-nftables.service")
 APROXY_LISTEN_PORT = 8443
 APROXY_SNAP_NAME = "aproxy"
-APROXY_SNAP_CHANNEL = "edge"
 DEFAULT_PROXY_PORT = 80
 RELATION_NAME = "juju-info"
 
@@ -78,6 +77,7 @@ class AproxyConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    channel: str
     proxy_address: str
     proxy_port: int = DEFAULT_PROXY_PORT
     exclude_addresses: List[str] = []
@@ -132,9 +132,13 @@ class AproxyConfig(BaseModel):
         intercept_ports_raw = str(conf.get("intercept-ports", ""))
         intercept_ports_list = intercept_ports_raw.split(",") if intercept_ports_raw else []
 
+        channel = charm.config.get("channel")
+        if channel not in ("latest/edge", "latest/beta", "latest/candidate", "latest/stable"):
+            raise InvalidCharmConfigError(f"unknown channel configuration: '{channel}'")
         # Build the AproxyConfig instance and validate the fields
         try:
             return cls(
+                channel=str(channel),
                 proxy_address=proxy_address,
                 proxy_port=proxy_port,
                 exclude_addresses=exclude_addresses,
@@ -263,13 +267,15 @@ class AproxyManager:
 
     # ---------------- Snap ----------------
 
-    def install(self) -> None:
-        """Install aproxy snap using snap helper."""
+    def install(self, channel: str) -> None:
+        """Install aproxy snap using snap helper.
+
+        Args:
+            channel: The snap channel to install.
+        """
         logger.info("Installing %s snap", APROXY_SNAP_NAME)
         snap_cache = snap.SnapCache()
-        snap_cache[APROXY_SNAP_NAME].ensure(
-            state=snap.SnapState.Latest, channel=APROXY_SNAP_CHANNEL
-        )
+        snap_cache[APROXY_SNAP_NAME].ensure(state=snap.SnapState.Latest, channel=channel)
 
     def uninstall(self) -> None:
         """Remove aproxy snap using snap helper."""
@@ -277,14 +283,18 @@ class AproxyManager:
         snap_cache = snap.SnapCache()
         snap_cache[APROXY_SNAP_NAME].ensure(state=snap.SnapState.Absent)
 
-    def is_snap_installed(self) -> bool:
+    def is_snap_installed(self, channel: str) -> bool:
         """Check if aproxy snap is installed.
+
+        Args:
+            channel: The snap channel.
 
         Returns:
             True if installed, False otherwise.
         """
         snap_cache = snap.SnapCache()
-        return snap_cache[APROXY_SNAP_NAME].present
+        aproxy_snap = snap_cache[APROXY_SNAP_NAME]
+        return aproxy_snap.present and aproxy_snap.channel == channel
 
     def configure_target_proxy(self) -> None:
         """Configure aproxy snap with current config.

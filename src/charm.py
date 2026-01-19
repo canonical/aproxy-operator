@@ -65,9 +65,9 @@ class AproxyCharm(ops.CharmBase):
             self.unit.status = ops.BlockedStatus(f"Invalid charm configuration: {e}")
             return
 
-        if not aproxy.is_snap_installed():
+        if not aproxy.is_snap_installed(config.channel):
             self.unit.status = ops.MaintenanceStatus("Installing aproxy snap...")
-            aproxy.install()
+            aproxy.install(config.channel)
             logger.info("Aproxy snap installed.")
 
         self.unit.status = ops.MaintenanceStatus("Configuring aproxy snap...")
