@@ -42,7 +42,7 @@ parts:
 config:
   options:
     channel:
-      default: latest/sable
+      default: latest/stable
       description: |
         Configures the aproxy snap channel to install.
       type: string
