@@ -41,6 +41,11 @@ parts:
       - astral-uv
 config:
   options:
+    channel:
+      default: latest/stable
+      description: |
+        Configures the aproxy snap channel to install.
+      type: string
     proxy-address:
       description: |
         Configures the target proxy IP/hostname address and port for traffic forwarding.
