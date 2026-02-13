@@ -13,34 +13,6 @@ permissions:
 
 jobs:
   test-terraform:
-    name: Test Terraform with Juju
-    runs-on: ubuntu-latest
-    env:
-      WORKING_DIR: "terraform/tests"
-    steps:
-      - name: Base tests
-        uses: canonical/operator-workflows/.github/workflows/terraform_modules_test.yaml@feat/add_terraform_module_tests-ISD-5149
-
-      - name: Prepare custom tests
-        run: terraform apply -auto-approve
-        working-directory: ${{ env.WORKING_DIR }}
-
-      - name: Deploy principal and relate aproxy
-        run: |
-          juju deploy ubuntu --channel=latest/stable --model tf-testing-lxd
-          juju integrate ubuntu aproxy --model tf-testing-lxd
-
-      - name: Wait for aproxy to be deployed
-        run: |
-          echo "Waiting for aproxy to be deployed..."
-          juju wait-for application aproxy --query='status=="maintenance" || status=="blocked"' --timeout=10m
-
-      - name: Verify aproxy application is deployed
-        run: |
-          STATUS=$(juju status aproxy --model tf-testing-lxd --format=json | jq -r '.applications.aproxy["application-status"].current')
-          echo "aproxy status: $STATUS"
-          if [ "$STATUS" == "error" ] || [ "$STATUS" == "unknown" ]; then
-            echo "aproxy failed to deploy or is unknown"
-            juju status --model test-aproxy-example
-            exit 1
-          fi
+    uses: canonical/operator-workflows/.github/workflows/terraform_modules_test.yaml@feat/add_terraform_module_tests-ISD-5149
+    with:
+      lxd-provider: true
