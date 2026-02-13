@@ -1,6 +1,7 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+
 variable "channel" {
   description = "The channel to use when deploying a charm."
   type        = string
