@@ -16,3 +16,4 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/terraform_modules_test.yaml@feat/add_terraform_module_tests-ISD-5149
     with:
       lxd-controller: true
+      additional-tests-script: ./test-full-deployment.sh
