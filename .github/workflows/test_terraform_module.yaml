@@ -19,7 +19,7 @@ jobs:
       WORKING_DIR: "terraform/tests"
     steps:
       - name: Base tests
-        uses: canonical/operator-workflows/.github/workflows/terraform_modules_test.yaml@main
+        uses: canonical/operator-workflows/.github/workflows/terraform_modules_test.yaml@feat/add_terraform_module_tests-ISD-5149
 
       - name: Prepare custom tests
         run: terraform apply -auto-approve
