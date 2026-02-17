@@ -2,6 +2,9 @@
 # Copyright 2026 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd $DIR
+
 set -euo pipefail
 
 # Additional deployment tests for aproxy-operator

@@ -16,4 +16,4 @@ jobs:
       lxd-controller: true
       k8s-controller: false
       terraform-directories: '["terraform"]'
-      additional-tests-script: ./test-full-deployment.sh
+      additional-tests-script: ./tests/test-full-deployment.sh
