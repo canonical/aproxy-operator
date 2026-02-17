@@ -16,7 +16,7 @@ variable "revision" {
 terraform {
   required_providers {
     juju = {
-      version = "~> 0.23.0"
+      version = "> 1.1.0"
       source  = "juju/juju"
     }
   }
@@ -24,12 +24,17 @@ terraform {
 
 provider "juju" {}
 
+data "juju_model" "test_model" {
+  name  = "tf-testing-k8s"
+  owner = "admin"
+}
+
 module "aproxy" {
-  source   = "./.."
-  app_name = "aproxy"
-  channel  = var.channel
-  revision = var.revision
-  model = "tf-testing-lxd"
+  source     = "./.."
+  app_name   = "aproxy"
+  channel    = var.channel
+  revision   = var.revision
+  model_uuid = data.juju_model.test_model.uuid
   config = {
     proxy-address = "127.0.0.1:80"
   }
