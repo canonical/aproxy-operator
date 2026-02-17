@@ -8,7 +8,7 @@ variables {
 }
 
 run "basic_deploy" {
-  
+
   module {
     source = "./tests"
   }
