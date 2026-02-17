@@ -29,7 +29,7 @@ module "aproxy" {
   app_name = "aproxy"
   channel  = var.channel
   revision = var.revision
-  model    = "test-aproxy-example"
+  model = "tf-testing-lxd"
   config = {
     proxy-address = "127.0.0.1:80"
   }
