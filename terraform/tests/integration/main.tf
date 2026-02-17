@@ -2,10 +2,15 @@
 # See LICENSE file for licensing details.
 
 terraform {
+  required_version = ">= 1.0"
   required_providers {
     juju = {
       version = "> 1.1.0"
       source  = "juju/juju"
+    }
+    external = {
+      version = "> 2"
+      source  = "hashicorp/external"
     }
   }
 }
@@ -35,6 +40,7 @@ resource "juju_integration" "aproxy_ubuntu" {
   }
 }
 
+# tflint-ignore: terraform_unused_declarations
 data "external" "aproxy_status" {
   program = ["bash", "${path.module}/wait-for-status.sh", var.model_uuid]
 
