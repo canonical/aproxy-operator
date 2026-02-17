@@ -1,14 +1,7 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-variables {
-  channel = "latest/edge"
-  # renovate: depName="aproxy"
-  revision = 1
-}
-
 run "basic_deploy" {
-
   module {
     source = "./tests"
   }

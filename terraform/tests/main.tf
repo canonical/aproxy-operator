@@ -7,12 +7,6 @@ variable "channel" {
   default     = "latest/edge"
 }
 
-variable "revision" {
-  description = "Revision number of the charm."
-  type        = number
-  default     = null
-}
-
 terraform {
   required_providers {
     juju = {
@@ -30,10 +24,11 @@ data "juju_model" "test_model" {
 }
 
 module "aproxy" {
-  source     = "./.."
-  app_name   = "aproxy"
-  channel    = var.channel
-  revision   = var.revision
+  source   = "./.."
+  app_name = "aproxy"
+  channel  = "latest/edge"
+  # renovate: depName="aproxy"
+  revision   = 52
   model_uuid = data.juju_model.test_model.uuid
   config = {
     proxy-address = "127.0.0.1:80"
