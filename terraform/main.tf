@@ -10,7 +10,7 @@ resource "juju_application" "aproxy" {
     base     = var.base
   }
 
-  model  = var.model
-  config = var.config
-  units  = 1
+  model_uuid = var.model_uuid
+  config     = var.config
+  units      = 1
 }

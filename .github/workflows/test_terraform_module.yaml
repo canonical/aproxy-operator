@@ -1,9 +1,9 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-name: Terraform module tests (machine-based)
-
+name: Test Terraform Module
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - "terraform/**"
@@ -13,72 +13,8 @@ permissions:
 
 jobs:
   test-terraform:
-    name: Test Terraform with Juju
-    runs-on: ubuntu-latest
-    env:
-      WORKING_DIR: "terraform/tests"
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v6.0.2
-
-      - name: Setup Juju with LXD
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: "lxd"
-          juju-channel: 3/stable
-          channel: "latest/stable"
-
-      - name: Prepare juju tf provider environment
-        run: |
-          set -e
-          CONTROLLER=$(juju whoami | yq .Controller)
-          JUJU_CONTROLLER_ADDRESSES="$(juju show-controller | yq '.[$CONTROLLER]'.details.\"api-endpoints\" | tr -d "[]' "|tr -d '"'|tr -d '\n')"
-          JUJU_USERNAME="$(cat ~/.local/share/juju/accounts.yaml | yq .controllers.$CONTROLLER.user|tr -d '"')"
-          JUJU_PASSWORD="$(cat ~/.local/share/juju/accounts.yaml | yq .controllers.$CONTROLLER.password|tr -d '"')"
-
-          echo "JUJU_CONTROLLER_ADDRESSES=$JUJU_CONTROLLER_ADDRESSES" >> "$GITHUB_ENV"
-          echo "JUJU_USERNAME=$JUJU_USERNAME" >> "$GITHUB_ENV"
-          echo "JUJU_PASSWORD=$JUJU_PASSWORD" >> "$GITHUB_ENV"
-          {
-            echo 'JUJU_CA_CERT<<EOF'
-            juju show-controller $(echo $CONTROLLER|tr -d '"') | yq '.[$CONTROLLER]'.details.\"ca-cert\"|tr -d '"'
-            echo EOF
-          } >> "$GITHUB_ENV"
-      - uses: hashicorp/setup-terraform@v3.1.2
-      - run: terraform init
-        working-directory: ${{env.WORKING_DIR}}
-      - run: terraform validate
-        working-directory: ${{env.WORKING_DIR}}
-      - run: terraform plan -out=tfplan
-        working-directory: ${{env.WORKING_DIR}}
-      - run: terraform show tfplan
-        working-directory: ${{env.WORKING_DIR}}
-      - run: |
-          juju add-model test-aproxy-example
-          set -e  # Exit on error
-          terraform test || { echo "Terraform test failed"; exit 1; }
-        working-directory: ${{env.WORKING_DIR}}
-
-      - name: Apply Terraform
-        run: terraform apply -auto-approve
-        working-directory: ${{ env.WORKING_DIR }}
-
-      - name: Deploy principal and relate aproxy
-        run: |
-          juju deploy ubuntu --channel=latest/stable --model test-aproxy-example
-          juju integrate ubuntu aproxy --model test-aproxy-example
-
-      - name: Wait for aproxy to be deployed
-        run: |
-          echo "Waiting for aproxy to be deployed..."
-          juju wait-for application aproxy --query='status=="maintenance" || status=="blocked"' --timeout=10m
-
-      - name: Verify aproxy application is deployed
-        run: |
-          STATUS=$(juju status aproxy --model test-aproxy-example --format=json | jq -r '.applications.aproxy["application-status"].current')
-          echo "aproxy status: $STATUS"
-          if [ "$STATUS" == "error" ] || [ "$STATUS" == "unknown" ]; then
-            echo "aproxy failed to deploy or is unknown"
-            juju status --model test-aproxy-example
-            exit 1
-          fi
+    uses: canonical/operator-workflows/.github/workflows/terraform_modules_test.yaml@main
+    with:
+      lxd-controller: true
+      k8s-controller: false
+      terraform-directories: '["terraform"]'
