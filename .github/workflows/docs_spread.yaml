@@ -1,0 +1,16 @@
+name: "Test tutorial documentation with Spread"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "docs/tutorial.md"
+
+jobs:
+  tutorial-spread-test:
+    uses: canonical/operator-workflows/.github/workflows/docs_spread.yaml@main
+    secrets: inherit
+    with:
+      input-file: docs/tutorial.md
+      output-dir: tests/spread/tutorial/
+      spread-job: github-ci:ubuntu-24.04-64:tests/spread/tutorial

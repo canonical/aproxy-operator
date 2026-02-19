@@ -171,6 +171,10 @@ To confirm that aproxy is forwarding properly, make an outbound TCP connection o
 
 For example, let's curl `cloud-images.ubuntu.com` from inside `ubuntu/0` unit:
 
+<!-- SPREAD
+juju ssh ubuntu/0 -- curl -v cloud-images.ubuntu.com
+-->
+
 ```bash
 juju ssh ubuntu/0
 curl -v cloud-images.ubuntu.com
@@ -215,13 +219,15 @@ Expected output:
 2025-10-14T08:43:00Z aproxy.aproxy[16156]: 2025/10/14 08:43:00 INFO relay HTTP connection to proxy src=10.142.134.228:41826 original_dst=185.125.190.40:80 host=cloud-images.ubuntu.com:80
 ```
 
+<!-- SPREAD SKIP -->
+
 ## Tear down the environment
 
 Congratulations! 🎉
 
 You have successfully deployed the aproxy subordinate charm, related it to a primary application, and verified that it works as expected.
 
-When you’re done with the tutorial, clean up your environment to free resources:
+When you're done with the tutorial, clean up your environment to free resources:
 
 ```bash
 juju destroy-model aproxy-tutorial --destroy-storage --force --no-prompt
@@ -232,6 +238,8 @@ If you used a Multipass VM for this tutorial and no longer need it, you can remo
 ```bash
 multipass delete --purge my-juju-vm
 ```
+
+<!-- SPREAD SKIP END -->
 
 ## Next steps
 
