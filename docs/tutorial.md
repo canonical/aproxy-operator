@@ -48,6 +48,8 @@ juju deploy ubuntu
 
 Wait until the deployment is complete:
 
+<!-- SPREAD SKIP -->
+
 ```bash
 juju status --watch 1s
 ```
@@ -58,6 +60,8 @@ When the application is active and ready, the output should look similar to:
 App     Version  Status  Scale  Charm   Channel        Rev  Exposed  Message
 ubuntu  24.04    active      1  ubuntu  latest/stable   26  no
 ```
+
+<!-- SPREAD SKIP END -->
 
 ## Deploy the aproxy subordinate charm
 
@@ -89,6 +93,8 @@ juju status
 
 The output should be similar to the following:
 
+<!-- SPREAD SKIP -->
+
 ```
 Model           Controller  Cloud/Region   Version
 aproxy-tutorial lxd         localhost      3.4.1
@@ -101,6 +107,8 @@ Unit         Workload  Agent  Machine  Public address  Ports  Message
 ubuntu/0*    active    idle   0        10.152.184.228
   aproxy/0*  active    idle            10.152.184.228         Service ready on target proxy 127.0.0.1:80
 ```
+
+<!-- SPREAD SKIP END -->
 
 You should see both applications in an **active** state, with aproxy listed as a subordinate unit to the Ubuntu charm.
 
@@ -121,6 +129,8 @@ juju config aproxy
 ```
 
 The output should be similar to the following:
+
+<!-- SPREAD SKIP -->
 
 ```
 application: aproxy
@@ -165,20 +175,20 @@ settings:
 
 ```
 
+<!-- SPREAD SKIP END -->
+
 ## Run a connection test
 
 To confirm that aproxy is forwarding properly, make an outbound TCP connection on the principal charm.
 
 For example, let's curl `cloud-images.ubuntu.com` from inside `ubuntu/0` unit:
 
-<!-- SPREAD
-juju ssh ubuntu/0 -- curl -v cloud-images.ubuntu.com
--->
-
 ```bash
 juju ssh ubuntu/0
 curl -v cloud-images.ubuntu.com
 ```
+
+<!-- SPREAD SKIP -->
 
 If successful, the output should be similar to the following:
 
@@ -218,8 +228,6 @@ Expected output:
 2025-10-13T14:18:16Z aproxy.aproxy[16156]: 2025/10/13 14:18:16 INFO start forwarding to proxy 127.0.0.1:80
 2025-10-14T08:43:00Z aproxy.aproxy[16156]: 2025/10/14 08:43:00 INFO relay HTTP connection to proxy src=10.142.134.228:41826 original_dst=185.125.190.40:80 host=cloud-images.ubuntu.com:80
 ```
-
-<!-- SPREAD SKIP -->
 
 ## Tear down the environment
 
