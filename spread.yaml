@@ -94,7 +94,6 @@ prepare: |
   sudo snap install lxd --channel=stable
   sudo lxd waitready
   sudo lxd init --auto
-  juju bootstrap lxd lxd-controller
 
 suites:
   tests/spread/:
