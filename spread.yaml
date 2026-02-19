@@ -90,8 +90,11 @@ prepare: |
     systemctl mask unattended-upgrades.service
   fi
 
-  sudo snap install --classic concierge
-  sudo concierge prepare -p microk8s
+  # Ensure LXD is installed and initialized for machine-based Juju models
+  sudo snap install lxd --channel=stable
+  sudo lxd waitready
+  sudo lxd init --auto
+  juju bootstrap lxd lxd-controller
 
 suites:
   tests/spread/:
