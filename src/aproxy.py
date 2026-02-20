@@ -23,8 +23,7 @@ from pathlib import Path
 from typing import List
 
 import ops
-from charmlibs import snap
-from charms.operator_libs_linux.v1 import systemd
+from charmlibs import snap, systemd
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
 from errors import (
