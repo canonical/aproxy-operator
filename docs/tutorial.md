@@ -184,7 +184,7 @@ To confirm that aproxy is forwarding properly, make an outbound TCP connection o
 For example, let's curl `cloud-images.ubuntu.com` from inside `ubuntu/0` unit:
 
 <!-- SPREAD
-juju ssh ubuntu/0 -- curl -v cloud-images.ubuntu.com | grep -q 'HTTP/.* 200 OK'
+juju ssh ubuntu/0 -- 'curl -s -o /dev/null -w "%{http_code}" http://cloud-images.ubuntu.com' | grep -q '^200$'
 -->
 
 <!-- SPREAD SKIP -->
