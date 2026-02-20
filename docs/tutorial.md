@@ -46,6 +46,10 @@ Deploy the Ubuntu charm:
 juju deploy ubuntu
 ```
 
+<!-- SPREAD
+juju wait-for application ubuntu --query='status=="active"'
+-->
+
 Wait until the deployment is complete:
 
 <!-- SPREAD SKIP -->

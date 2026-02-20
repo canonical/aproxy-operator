@@ -50,8 +50,7 @@ backends:
       system=$(echo "${SPREAD_SYSTEM}" | tr . -)
       instance_name="spread-${SPREAD_BACKEND}-${instance_num}-${system}"
 
-      multipass launch -vv --cpus 4 --disk 50G --memory 8G --name "${instance_name}" \
-        --cloud-init charm/tests/spread/lib/cloud-config.yaml "${multipass_image}"
+      multipass launch -vv --cpus 4 --disk 50G --memory 8G --name "${instance_name}" "${multipass_image}"
 
       # Get the IP from the instance
       ip=$(multipass info --format csv "$instance_name" | tail -1 | cut -d\, -f3)
