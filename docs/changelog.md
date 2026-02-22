@@ -10,6 +10,10 @@ Each revision is versioned by the date of the revision.
 
 Place any unreleased changes here, that are subject to release in coming versions :).
 
+## 2026-02-19
+
+- Update tutorial and add workflow to test the tutorial using Spread.
+
 ## 2025-01-11
 
 - Fixed the model config variable names for HTTP and HTTPS proxy.
@@ -25,4 +29,3 @@ Place any unreleased changes here, that are subject to release in coming version
 ## 2025-10-9
 
 - Added core functionality and tests to the charm.
-

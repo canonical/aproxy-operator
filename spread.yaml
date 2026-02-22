@@ -1,0 +1,43 @@
+# Copyright 2026 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+project: aproxy-operator
+
+path: /aproxy-operator
+environment:
+  PROJECT_PATH: /aproxy-operator
+
+  # important to ensure adhoc and linode/qemu behave the same
+  SUDO_USER: ""
+  SUDO_UID: ""
+
+  LANG: "C.UTF-8"
+  LANGUAGE: "en"
+
+exclude:
+  - .git
+  - .github
+  - .tox
+  - .venv
+  - .*_cache
+  - charmcraft
+  - libexec
+  - schema
+  - snap
+
+prepare: |
+  snap refresh --hold
+
+  if systemctl is-enabled unattended-upgrades.service; then
+    systemctl stop unattended-upgrades.service
+    systemctl mask unattended-upgrades.service
+  fi
+
+  sudo snap install --classic concierge
+  sudo concierge prepare -p machine
+
+suites:
+  tests/spread/:
+    summary: tutorial test
+    systems:
+      - ubuntu-24.04-64

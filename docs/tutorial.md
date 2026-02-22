@@ -46,7 +46,13 @@ Deploy the Ubuntu charm:
 juju deploy ubuntu
 ```
 
+<!-- SPREAD
+juju wait-for application ubuntu --query='status=="active"'
+-->
+
 Wait until the deployment is complete:
+
+<!-- SPREAD SKIP -->
 
 ```bash
 juju status --watch 1s
@@ -58,6 +64,8 @@ When the application is active and ready, the output should look similar to:
 App     Version  Status  Scale  Charm   Channel        Rev  Exposed  Message
 ubuntu  24.04    active      1  ubuntu  latest/stable   26  no
 ```
+
+<!-- SPREAD SKIP END -->
 
 ## Deploy the aproxy subordinate charm
 
@@ -89,6 +97,8 @@ juju status
 
 The output should be similar to the following:
 
+<!-- SPREAD SKIP -->
+
 ```
 Model           Controller  Cloud/Region   Version
 aproxy-tutorial lxd         localhost      3.4.1
@@ -101,6 +111,8 @@ Unit         Workload  Agent  Machine  Public address  Ports  Message
 ubuntu/0*    active    idle   0        10.152.184.228
   aproxy/0*  active    idle            10.152.184.228         Service ready on target proxy 127.0.0.1:80
 ```
+
+<!-- SPREAD SKIP END -->
 
 You should see both applications in an **active** state, with aproxy listed as a subordinate unit to the Ubuntu charm.
 
@@ -121,6 +133,8 @@ juju config aproxy
 ```
 
 The output should be similar to the following:
+
+<!-- SPREAD SKIP -->
 
 ```
 application: aproxy
@@ -165,11 +179,19 @@ settings:
 
 ```
 
+<!-- SPREAD SKIP END -->
+
 ## Run a connection test
 
 To confirm that aproxy is forwarding properly, make an outbound TCP connection on the principal charm.
 
 For example, let's curl `cloud-images.ubuntu.com` from inside `ubuntu/0` unit:
+
+<!-- SPREAD
+juju ssh ubuntu/0 -- curl -sL -o /dev/null -w "%{http_code}" cloud-images.ubuntu.com | grep -q '200'
+-->
+
+<!-- SPREAD SKIP -->
 
 ```bash
 juju ssh ubuntu/0
@@ -221,7 +243,7 @@ Congratulations! 🎉
 
 You have successfully deployed the aproxy subordinate charm, related it to a primary application, and verified that it works as expected.
 
-When you’re done with the tutorial, clean up your environment to free resources:
+When you're done with the tutorial, clean up your environment to free resources:
 
 ```bash
 juju destroy-model aproxy-tutorial --destroy-storage --force --no-prompt
@@ -232,6 +254,8 @@ If you used a Multipass VM for this tutorial and no longer need it, you can remo
 ```bash
 multipass delete --purge my-juju-vm
 ```
+
+<!-- SPREAD SKIP END -->
 
 ## Next steps
 
