@@ -1,0 +1,21 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"
+    arrange: ubuntu with aproxy subordinate and tinyproxy running.
+    act: start a local HTTP server inside the ubuntu unit, then curl it.
+    assert: request succeeds via aproxy interception.
+    ","3941","test_traffic_routed_through_aproxy","tests.integration","2026-02-28","passed","2026-02-28","","test_charm","",""
+"
+    arrange: ubuntu with aproxy subordinate.
+    act: remove aproxy charm.
+    assert: no leftover proxy env vars on principal unit.
+    ","11249","test_cleanup_on_removal","tests.integration","2026-02-28","passed","2026-02-28","","test_charm","",""
+"
+    arrange: deploy aproxy with proxy-address configured.
+    act: set the model config juju-http-proxy, then unset aproxy proxy-address.
+    assert: aproxy reads proxy values from the model config.
+    ","5279","test_aproxy_reads_model_proxy","tests.integration","2026-02-28","passed","2026-02-28","","test_charm","",""
+"
+    arrange: deploy aproxy subordinate charm on ubuntu.
+    act: wait for units to settle.
+    assert: aproxy subordinate reaches active status.
+    ","2616","test_aproxy_active","tests.integration","2026-02-28","passed","2026-02-28","","test_charm","",""
