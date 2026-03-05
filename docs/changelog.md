@@ -10,6 +10,10 @@ Each revision is versioned by the date of the revision.
 
 Place any unreleased changes here, that are subject to release in coming versions :).
 
+## 2026-03-05
+
+- Add landing pages for how-to and reference section.
+
 ## 2026-02-19
 
 - Update tutorial and add workflow to test the tutorial using Spread.
