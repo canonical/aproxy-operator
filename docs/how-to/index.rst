@@ -1,6 +1,3 @@
-.. Copyright 2026 Canonical Ltd.
-.. See LICENSE file for licensing details.
-
 .. meta::
    :description: How-to guides for operating the aproxy charm, including basic operations, upgrades, and development.
 
