@@ -26,4 +26,5 @@ header:
   - 'zap_rules.tsv'
   - '**/*.md.j2'
   - 'uv.lock'
+  - 'docs/**'
   comment: on-failure
