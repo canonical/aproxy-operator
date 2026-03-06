@@ -28,6 +28,7 @@ including actions, configurations, and integrations.
     Actions <actions>
     Configurations <configurations>
     Integrations <integrations>
+    Metrics <metrics>
 
 .. vale Canonical.004-Canonical-product-names = YES
 

@@ -2,7 +2,7 @@
 .. See LICENSE file for licensing details.
 
 .. meta::
-   :description: How-to guides for operating the aproxy charm, including basic operations, upgrades, and development. 
+   :description: How-to guides for operating the aproxy charm, including basic operations, upgrades, and development.
 
 .. _how_to_index:
 
@@ -27,6 +27,7 @@ basic operations you can complete with the charm.
     :maxdepth: 1
 
     Configure <configure>
+    Integrate with COS <integrate-with-cos>
 
 Update and refresh
 ------------------
