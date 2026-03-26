@@ -1,6 +1,6 @@
 # Contributing
 
-This document explains the processes and practices recommended for contributing enhancements to the aproxy Operator.
+This document explains the processes and practices recommended for contributing enhancements to the Aproxy Subordinate charm.
 
 ## Overview
 
@@ -84,7 +84,7 @@ we use the [Canonical contributor license agreement](https://assets.ubuntu.com/v
 
 #### Canonical contributor agreement
 
-Canonical welcomes contributions to the aproxy Operator. Please check out our
+Canonical welcomes contributions to the Aproxy Subordinate charm. Please check out our
 [contributor agreement](https://ubuntu.com/legal/contributors) if you're interested in contributing to the solution.
 
 The CLA sign-off is simple line at the
@@ -146,7 +146,7 @@ that can be used for linting and formatting code when you're preparing contribut
 ### Build the rock and charm
 
 Use [Rockcraft](https://documentation.ubuntu.com/rockcraft/stable/) to create an
-OCI image for the aproxy app, and then upload the image to a MicroK8s registry,
+OCI image for aproxy, and then upload the image to a MicroK8s registry,
 which stores OCI archives so they can be downloaded and deployed.
 
 Enable the MicroK8s registry:
@@ -177,8 +177,10 @@ charmcraft pack
 juju add-model charm-dev
 # Enable DEBUG logging
 juju model-config logging-config="<root>=INFO;unit=DEBUG"
-# Deploy the charm
-juju deploy ./aproxy*.charm 
+# Deploy the charm with a required config
+juju deploy ./aproxy.charm --config proxy-address=<target.proxy>
+# Integrate with a principal charm
+juju integrate aproxy <principal-charm>
 ```
 
 
