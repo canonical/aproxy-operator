@@ -46,8 +46,8 @@ def test_aproxy_reads_model_proxy(juju, aproxy_app, tinyproxy_url):
     act: set the model config juju-http-proxy, then unset aproxy proxy-address.
     assert: aproxy reads proxy values from the model config.
     """
-    juju.cli("model-config", f"juju-http-proxy=http://{tinyproxy_url}:8888")
-    juju.cli("config", "aproxy", "--reset", "proxy-address")
+    juju.model_config({"juju-http-proxy": f"http://{tinyproxy_url}:8888"}, log=False)
+    juju.config("aproxy", reset="proxy-address", log=False)
 
     juju.wait(jubilant.all_active, timeout=5 * 60)
     units = juju.status().get_units(aproxy_app.name)
