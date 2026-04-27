@@ -6,13 +6,12 @@
 
 # nosec B404: subprocess usage is intentional and safe (predefined executables only).
 import subprocess  # nosec
-import unittest.mock
 
 import pytest
 from ops import testing
 from scenario.errors import UncaughtCharmError
 
-from aproxy import AproxyConfig, AproxyManager, NFT_CONF_FILE
+from aproxy import NFT_CONF_FILE
 from charm import AproxyCharm
 
 
@@ -314,27 +313,29 @@ def test_install_with_juju_model_config_should_succeed(patch_proxy_check, monkey
     assert out.unit_status == testing.ActiveStatus("Service ready on target proxy juju.proxy:3128")
 
 
-def test_render_nft_rules_includes_fib_local_return_in_prerouting():
+def test_nft_prerouting_automatically_excludes_local_host_traffic(
+    patch_proxy_check, monkeypatch
+):
     """
-    arrange: create an AproxyManager with a minimal config.
-    act: call _render_nft_rules.
-    assert: rendered rules contain 'fib daddr type local return' in the prerouting chain,
-            before the dnat rule.
+    arrange: declare a context with proxy config.
+    act: run the start event.
+    assert: generated nftables prerouting rules contain 'fib daddr type local return'
+            before any dnat rule, automatically excluding local host traffic.
     """
-    config = AproxyConfig(
-        channel="latest/stable",
-        proxy_address="target.proxy",
-        proxy_port=80,
-        exclude_addresses=[],
-        intercept_ports_list=["80", "443"],
+    patch_proxy_check(is_reachable=True)
+    nft_rules_written = []
+    monkeypatch.setattr(
+        "aproxy.AproxyManager.apply_nft_config",
+        lambda self: nft_rules_written.append(self._render_nft_rules()),
     )
-    mock_charm = unittest.mock.MagicMock()
-    manager = AproxyManager(config, mock_charm)
-    manager._get_primary_ip = lambda: "10.0.0.1"
 
-    rules = manager._render_nft_rules()
+    ctx = testing.Context(AproxyCharm)
+    state = testing.State(config={"channel": "latest/stable", "proxy-address": "target.proxy"})
+    ctx.run(ctx.on.start(), state)
 
+    assert nft_rules_written, "nft rules should have been generated"
+    rules = nft_rules_written[0]
     assert "fib daddr type local return" in rules
-    fib_pos = rules.index("fib daddr type local return")
-    dnat_pos = rules.index("dnat to")
-    assert fib_pos < dnat_pos, "fib daddr type local return must appear before dnat in prerouting"
+    assert rules.index("fib daddr type local return") < rules.index("dnat to"), (
+        "fib daddr type local return must appear before dnat in prerouting chain"
+    )
