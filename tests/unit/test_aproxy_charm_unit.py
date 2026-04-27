@@ -6,12 +6,13 @@
 
 # nosec B404: subprocess usage is intentional and safe (predefined executables only).
 import subprocess  # nosec
+import unittest.mock
 
 import pytest
 from ops import testing
 from scenario.errors import UncaughtCharmError
 
-from aproxy import NFT_CONF_FILE
+from aproxy import AproxyConfig, AproxyManager, NFT_CONF_FILE
 from charm import AproxyCharm
 
 
@@ -311,3 +312,29 @@ def test_install_with_juju_model_config_should_succeed(patch_proxy_check, monkey
     out = ctx.run(ctx.on.install(), state)
 
     assert out.unit_status == testing.ActiveStatus("Service ready on target proxy juju.proxy:3128")
+
+
+def test_render_nft_rules_includes_fib_local_return_in_prerouting():
+    """
+    arrange: create an AproxyManager with a minimal config.
+    act: call _render_nft_rules.
+    assert: rendered rules contain 'fib daddr type local return' in the prerouting chain,
+            before the dnat rule.
+    """
+    config = AproxyConfig(
+        channel="latest/stable",
+        proxy_address="target.proxy",
+        proxy_port=80,
+        exclude_addresses=[],
+        intercept_ports_list=["80", "443"],
+    )
+    mock_charm = unittest.mock.MagicMock()
+    manager = AproxyManager(config, mock_charm)
+    manager._get_primary_ip = lambda: "10.0.0.1"
+
+    rules = manager._render_nft_rules()
+
+    assert "fib daddr type local return" in rules
+    fib_pos = rules.index("fib daddr type local return")
+    dnat_pos = rules.index("dnat to")
+    assert fib_pos < dnat_pos, "fib daddr type local return must appear before dnat in prerouting"
