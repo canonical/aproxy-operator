@@ -314,28 +314,50 @@ def test_install_with_juju_model_config_should_succeed(patch_proxy_check, monkey
 
 
 def test_nft_prerouting_automatically_excludes_local_host_traffic(
-    patch_proxy_check, monkeypatch
+    patch_proxy_check, monkeypatch, tmp_path
 ):
     """
-    arrange: declare a context with proxy config.
+    arrange: configure the charm without explicit local address exclusions.
     act: run the start event.
-    assert: generated nftables prerouting rules contain 'fib daddr type local return'
-            before any dnat rule, automatically excluding local host traffic.
+    assert: the nftables prerouting chain's first rule is 'fib daddr type local return',
+            ensuring all local-destined traffic is excluded automatically without any
+            explicit exclude-addresses-from-proxy configuration.
     """
     patch_proxy_check(is_reachable=True)
-    nft_rules_written = []
+
+    # Capture what apply_nft_config would write to disk
+    nft_conf = tmp_path / "nftables.conf"
     monkeypatch.setattr(
         "aproxy.AproxyManager.apply_nft_config",
-        lambda self: nft_rules_written.append(self._render_nft_rules()),
+        lambda self: nft_conf.write_text(self._render_nft_rules()),
     )
 
     ctx = testing.Context(AproxyCharm)
+    # No exclude-addresses-from-proxy: local traffic must be excluded automatically
     state = testing.State(config={"channel": "latest/stable", "proxy-address": "target.proxy"})
     ctx.run(ctx.on.start(), state)
 
-    assert nft_rules_written, "nft rules should have been generated"
-    rules = nft_rules_written[0]
-    assert "fib daddr type local return" in rules
-    assert rules.index("fib daddr type local return") < rules.index("dnat to"), (
-        "fib daddr type local return must appear before dnat in prerouting chain"
+    assert nft_conf.exists(), "nft config file should have been written"
+    nft_config = nft_conf.read_text()
+
+    # Parse the prerouting chain rules (skip the 'type nat ...' header line)
+    prerouting_rules = []
+    in_prerouting = False
+    for line in nft_config.splitlines():
+        stripped = line.strip()
+        if "chain prerouting {" in stripped:
+            in_prerouting = True
+            continue
+        if in_prerouting:
+            if stripped == "}":
+                break
+            if stripped.startswith("type nat"):
+                continue
+            if stripped:
+                prerouting_rules.append(stripped)
+
+    assert prerouting_rules, "prerouting chain should contain rules"
+    assert prerouting_rules[0] == "fib daddr type local return", (
+        f"First prerouting rule must be 'fib daddr type local return' to automatically "
+        f"exclude local traffic without explicit config. Got: '{prerouting_rules[0]}'"
     )
