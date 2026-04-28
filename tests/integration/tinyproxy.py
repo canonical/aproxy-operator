@@ -67,8 +67,8 @@ def deploy_tinyproxy(juju: jubilant.Juju, base: str) -> str:
     # any-charm on latest/edge only supports ubuntu@22.04 and ubuntu@24.04.
     # For other bases (e.g., ubuntu@20.04), fall back to ubuntu@22.04 for the
     # proxy server — the host OS of the proxy is irrelevant for testing aproxy.
-    _ANYCHARM_SUPPORTED_BASES = {"ubuntu@22.04", "ubuntu@24.04"}
-    anycharm_base = base if base in _ANYCHARM_SUPPORTED_BASES else "ubuntu@22.04"
+    anycharm_supported_bases = {"ubuntu@22.04", "ubuntu@24.04"}
+    anycharm_base = base if base in anycharm_supported_bases else "ubuntu@22.04"
 
     juju.deploy(
         "any-charm",
