@@ -396,12 +396,14 @@ class AproxyManager:
                 }}
             chain prerouting {{
                 type nat hook prerouting priority dstnat; policy accept;
+                fib daddr type local return
                 ip daddr @excluded_nets return
                 tcp dport {{ {ports_clause} }} counter dnat to {server_ip}:{APROXY_LISTEN_PORT}
             }}
 
             chain output {{
                 type nat hook output priority -150; policy accept;
+                fib daddr type local return
                 ip daddr @excluded_nets return
                 tcp dport {{ {ports_clause} }} counter dnat to {server_ip}:{APROXY_LISTEN_PORT}
             }}

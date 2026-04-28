@@ -103,19 +103,15 @@ def patch_aproxy_nft_failure(monkeypatch):
         if is_apply_failure:
             monkeypatch.setattr(
                 "aproxy.AproxyManager.apply_nft_config",
-                lambda self: (
-                    (_ for _ in ()).throw(
-                        NftApplyError(Exception("Simulated nft failure"), NFT_CONF_FILE)
-                    )
+                lambda self: (_ for _ in ()).throw(
+                    NftApplyError(Exception("Simulated nft failure"), NFT_CONF_FILE)
                 ),
             )
         if is_cleanup_failure:
             monkeypatch.setattr(
                 "aproxy.AproxyManager.remove_nft_config",
-                lambda self: (
-                    (_ for _ in ()).throw(
-                        NftCleanupError(Exception("Simulated nft cleanup failure"), NFT_CONF_FILE)
-                    )
+                lambda self: (_ for _ in ()).throw(
+                    NftCleanupError(Exception("Simulated nft cleanup failure"), NFT_CONF_FILE)
                 ),
             )
 
