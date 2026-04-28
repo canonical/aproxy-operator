@@ -311,4 +311,3 @@ def test_install_with_juju_model_config_should_succeed(patch_proxy_check, monkey
     out = ctx.run(ctx.on.install(), state)
 
     assert out.unit_status == testing.ActiveStatus("Service ready on target proxy juju.proxy:3128")
-
