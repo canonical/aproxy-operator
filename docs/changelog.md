@@ -10,6 +10,9 @@ Each revision is versioned by the date of the revision.
 
 Place any unreleased changes here, that are subject to release in coming versions :).
 
+# 2026-05-19
+- Add `aproxy-port` charm configuration to allow customizing the port that aproxy listens on.
+
 ## 2026-03-05
 
 - Add landing pages for how-to and reference section.

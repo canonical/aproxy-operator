@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 NFT_CONF_DIR = Path("/opt/aproxy-charm")
 NFT_CONF_FILE = NFT_CONF_DIR / "nftables.conf"
 SYSTEMD_UNIT_PATH = Path("/etc/systemd/system/aproxy-nftables.service")
-APROXY_LISTEN_PORT = 8443
+DEFAULT_APROXY_PORT = 8443
 APROXY_SNAP_NAME = "aproxy"
 DEFAULT_PROXY_PORT = 80
 RELATION_NAME = "juju-info"
@@ -70,6 +70,7 @@ class AproxyConfig(BaseModel):
         model_config: Pydantic config to forbid extra fields.
         proxy_address: The target proxy address (hostname or IP).
         proxy_port: The target proxy port.
+        aproxy_port: The port number that aproxy listens on.
         exclude_addresses: Comma-separated list of IPs, CIDRs, or hostnames to
             exclude from interception.
         intercept_ports_list: List of ports to intercept as strings.
@@ -80,6 +81,7 @@ class AproxyConfig(BaseModel):
     channel: str
     proxy_address: str
     proxy_port: int = DEFAULT_PROXY_PORT
+    aproxy_port: int = DEFAULT_APROXY_PORT
     exclude_addresses: List[str] = []
     intercept_ports_list: List[str]
 
@@ -132,6 +134,8 @@ class AproxyConfig(BaseModel):
         intercept_ports_raw = str(conf.get("intercept-ports", ""))
         intercept_ports_list = intercept_ports_raw.split(",") if intercept_ports_raw else []
 
+        aproxy_port = int(conf.get("aproxy-port", DEFAULT_APROXY_PORT))
+
         channel = charm.config.get("channel")
         if channel not in ("latest/edge", "latest/beta", "latest/candidate", "latest/stable"):
             raise InvalidCharmConfigError(f"unknown channel configuration: '{channel}'")
@@ -141,6 +145,7 @@ class AproxyConfig(BaseModel):
                 channel=str(channel),
                 proxy_address=proxy_address,
                 proxy_port=proxy_port,
+                aproxy_port=aproxy_port,
                 exclude_addresses=exclude_addresses,
                 intercept_ports_list=intercept_ports_list,
             )
@@ -166,6 +171,13 @@ class AproxyConfig(BaseModel):
         if not 0 < proxy_port < 65536:
             raise ValueError(f"proxy port must be between 1 and 65535 instead of {proxy_port}")
         return proxy_port
+
+    @field_validator("aproxy_port")
+    def _validate_aproxy_port(cls, aproxy_port: int) -> int:  # noqa: N805
+        """Validate that aproxy_port is a valid port number."""
+        if not 0 < aproxy_port < 65536:
+            raise ValueError(f"aproxy port must be between 1 and 65535 instead of {aproxy_port}")
+        return aproxy_port
 
     @field_validator("exclude_addresses")
     def _validate_exclude_addresses(cls, exclude_addresses: List[str]) -> List[str]:  # noqa: N805
@@ -310,8 +322,13 @@ class AproxyManager:
             current_proxy = aproxy_snap.get("proxy-address")
         except snap.SnapError:
             current_proxy = ""
+        try:
+            current_listen = aproxy_snap.get("listen")
+        except snap.SnapError:
+            current_listen = ""
         target_proxy = f"{self.config.proxy_address}:{self.config.proxy_port}"
-        if current_proxy == target_proxy:
+        target_listen = f":{self.config.aproxy_port}"
+        if current_proxy == target_proxy and current_listen == target_listen:
             logger.info("Proxy is already set to %s, skipping reconfiguration", target_proxy)
             return
 
@@ -320,8 +337,8 @@ class AproxyManager:
             logger.error("Proxy is not reachable at %s", target_proxy)
             raise ConnectionError(f"Proxy is not reachable at {target_proxy}")
 
-        logger.info("Configuring snap: proxy=%s", target_proxy)
-        aproxy_snap.set({"proxy": target_proxy})
+        logger.info("Configuring snap: proxy=%s, listen=%s", target_proxy, target_listen)
+        aproxy_snap.set({"proxy": target_proxy, "listen": target_listen})
 
     def _is_proxy_reachable(self, host: str, port: int = DEFAULT_PROXY_PORT) -> bool:
         """Check if the target proxy is reachable on the specified port.
@@ -378,6 +395,7 @@ class AproxyManager:
         """
         server_ip = self._get_primary_ip()
         ports_clause = ", ".join(self.config.intercept_ports_list)
+        listen_port = self.config.aproxy_port
         excluded_ips = ", ".join(
             [
                 "127.0.0.0/8",  # private loopback range
@@ -398,21 +416,21 @@ class AproxyManager:
                 type nat hook prerouting priority dstnat; policy accept;
                 fib daddr type local return
                 ip daddr @excluded_nets return
-                tcp dport {{ {ports_clause} }} counter dnat to {server_ip}:{APROXY_LISTEN_PORT}
+                tcp dport {{ {ports_clause} }} counter dnat to {server_ip}:{listen_port}
             }}
 
             chain output {{
                 type nat hook output priority -150; policy accept;
                 fib daddr type local return
                 ip daddr @excluded_nets return
-                tcp dport {{ {ports_clause} }} counter dnat to {server_ip}:{APROXY_LISTEN_PORT}
+                tcp dport {{ {ports_clause} }} counter dnat to {server_ip}:{listen_port}
             }}
 
             chain input {{
                 type filter hook input priority filter; policy accept;
                 iif "lo" accept
-                ip saddr {server_ip} tcp dport {APROXY_LISTEN_PORT} accept
-                tcp dport {APROXY_LISTEN_PORT} drop
+                ip saddr {server_ip} tcp dport {listen_port} accept
+                tcp dport {listen_port} drop
             }}
         }}
         """
