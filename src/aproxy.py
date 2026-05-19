@@ -411,6 +411,7 @@ class AproxyManager:
             chain input {{
                 type filter hook input priority filter; policy accept;
                 iif "lo" accept
+                ct status dnat tcp dport 8443 accept
                 ip saddr {server_ip} tcp dport {APROXY_LISTEN_PORT} accept
                 tcp dport {APROXY_LISTEN_PORT} drop
             }}
