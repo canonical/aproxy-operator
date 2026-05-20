@@ -11,7 +11,7 @@ import pytest
 from ops import testing
 from scenario.errors import UncaughtCharmError
 
-from aproxy import NFT_CONF_FILE
+from aproxy import NFT_CONF_FILE, AproxyConfig, AproxyManager
 from charm import AproxyCharm
 
 
@@ -311,3 +311,23 @@ def test_install_with_juju_model_config_should_succeed(patch_proxy_check, monkey
     out = ctx.run(ctx.on.install(), state)
 
     assert out.unit_status == testing.ActiveStatus("Service ready on target proxy juju.proxy:3128")
+
+
+def test_install_with_custom_aproxy_port_nft_rules(patch_proxy_check):
+    """
+    arrange: create an AproxyConfig with a custom aproxy-port of 9443.
+    act: render the nftables rules via AproxyManager._render_nft_rules.
+    assert: the generated nftables rules contain the custom port number.
+    """
+    config = AproxyConfig(
+        channel="latest/stable",
+        proxy_address="target.proxy",
+        proxy_port=80,
+        aproxy_port=9443,
+        intercept_ports_list=["80", "443"],
+    )
+    manager = AproxyManager(config, None)
+    manager._get_primary_ip = lambda: "127.0.0.1"
+    nft_rules = manager._render_nft_rules()
+
+    assert "9443" in nft_rules
