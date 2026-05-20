@@ -46,6 +46,11 @@ config:
       description: |
         Configures the aproxy snap channel to install.
       type: string
+    aproxy-port:
+      description: |
+        Configures the port number that the aproxy listens on.
+      default: 8443
+      type: int
     proxy-address:
       description: |
         Configures the target proxy IP/hostname address and port for traffic forwarding.
