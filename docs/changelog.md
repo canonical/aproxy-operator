@@ -12,6 +12,7 @@ Place any unreleased changes here, that are subject to release in coming version
 
 # 2026-05-19
 - Add `aproxy-port` charm configuration to allow customizing the port that aproxy listens on.
+- Fix a problem in the input chain that blocks forwarded traffic.
 
 ## 2026-03-05
 

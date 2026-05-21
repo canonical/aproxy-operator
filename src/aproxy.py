@@ -430,6 +430,7 @@ class AproxyManager:
                 type filter hook input priority filter; policy accept;
                 iif "lo" accept
                 ip saddr {server_ip} tcp dport {listen_port} accept
+                ip saddr {server_ip} tcp dport {listen_port} accept
                 tcp dport {listen_port} drop
             }}
         }}
