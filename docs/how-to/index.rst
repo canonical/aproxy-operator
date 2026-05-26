@@ -19,7 +19,6 @@ observability tools keep your aproxy deployment functioning correctly and
 connected to the rest of your infrastructure.
 
 .. toctree::
-    :hidden:
     :maxdepth: 1
 
     Configure <configure>
@@ -32,7 +31,6 @@ Upgrades, backups, and community contributions ensure the aproxy
 charm stays current, reliable, and benefits from ongoing improvements.
 
 .. toctree::
-    :hidden:
     :maxdepth: 1
 
     Back up and restore <back-up-restore>

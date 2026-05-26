@@ -22,7 +22,6 @@ actions. Understanding the charm architecture provides the structural context
 needed to see how those settings interact at runtime.
 
 .. toctree::
-    :hidden:
     :maxdepth: 1
 
     Actions <actions>
@@ -38,7 +37,6 @@ The aproxy charm communicates with other applications through integrations and
 exposes observability metrics to support monitoring and alerting.
 
 .. toctree::
-    :hidden:
     :maxdepth: 1
 
     Integrations <integrations>
