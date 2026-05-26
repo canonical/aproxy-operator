@@ -28,7 +28,7 @@ connected to the rest of your infrastructure.
 Maintenance and development
 ---------------------------
 
-Upgrades, back ups, and community contributions ensure the aproxy
+Upgrades, backups, and community contributions ensure the aproxy
 charm stays current, reliable, and benefits from ongoing improvements.
 
 .. toctree::

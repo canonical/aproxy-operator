@@ -17,7 +17,7 @@ the charm.
 Configuration and operations
 ----------------------------
 
-Operators control charm behaviour through configuration options and Juju
+Operators control charm behavior through configuration options and Juju
 actions. Understanding the charm architecture provides the structural context
 needed to see how those settings interact at runtime.
 
@@ -35,7 +35,7 @@ Connectivity and monitoring
 ---------------------------
 
 The aproxy charm communicates with other applications through integrations and
-exposes operational metrics to support observability and alerting.
+exposes observability metrics to support monitoring and alerting.
 
 .. toctree::
     :hidden:
