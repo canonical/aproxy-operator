@@ -29,7 +29,7 @@ actions.
 .. vale Canonical.004-Canonical-product-names = YES
 
 Architecture and design
----------------------------
+-----------------------
 
 The aproxy charm communicates with other applications through integrations.
 Understanding the charm architecture provides the structural context
