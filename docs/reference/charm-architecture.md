@@ -87,18 +87,6 @@ UpdateRelStyle(snap, upstream, $offsetY="-30", $offsetX="10")
 
 This subordinate charm does not use containers or Pebble-managed processes. Instead, it directly manages system resources (snap and nftables) on the host machine.
 
-## Metrics
-
-To be added in the future.
-
-<!--
-If the charm uses metrics, include a list under reference/metrics.md and link that document here.
-If the charm uses containers, you may include text here like:
-
-Inside the above mentioned containers, additional Pebble layers are defined in order to provide metrics.
-See [metrics](../explanation/link-to-metrics-document) for more information.
--->
-
 ## Juju events
 
 The charm observes the following Juju events:
