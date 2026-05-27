@@ -6,37 +6,37 @@
 Reference
 =========
 
-This section contains technical details and information about the aproxy charm.
-
-Charm usage
------------
-
-The following pages provide more information about the charm's features,
-including actions, configurations, and integrations.
+Technical specifications and architectural details for the aproxy charm serve
+as authoritative look-up material when configuring, integrating, or extending
+the charm.
 
 .. vale Canonical.013-Spell-out-numbers-below-10 = NO
 .. vale Canonical.500-Repeated-words = NO
 .. vale Canonical.004-Canonical-product-names = NO
 
+Configuration and operations
+----------------------------
+
+Operators control charm behavior through configuration options and Juju
+actions.
+
 .. toctree::
-    :hidden:
     :maxdepth: 1
 
     Actions <actions>
     Configurations <configurations>
-    Integrations <integrations>
-    Metrics <metrics>
 
 .. vale Canonical.004-Canonical-product-names = YES
 
-Architecture and deployments
-----------------------------
+Architecture and design
+-----------------------
 
-The following pages provide more details about the charm architecture and
-a high-level deployment with any required dependencies.
+The aproxy charm communicates with other applications through integrations.
+Understanding the charm architecture provides the structural context
+needed to see how those settings interact at runtime.
 
 .. toctree::
-    :hidden:
     :maxdepth: 1
 
     Charm architecture <charm-architecture>
+    Integrations <integrations>
