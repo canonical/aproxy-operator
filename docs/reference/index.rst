@@ -18,26 +18,25 @@ Configuration and operations
 ----------------------------
 
 Operators control charm behavior through configuration options and Juju
-actions. Understanding the charm architecture provides the structural context
-needed to see how those settings interact at runtime.
+actions.
 
 .. toctree::
     :maxdepth: 1
 
     Actions <actions>
     Configurations <configurations>
-    Charm architecture <charm-architecture>
 
 .. vale Canonical.004-Canonical-product-names = YES
 
-Connectivity and monitoring
+Architecture and design
 ---------------------------
 
-The aproxy charm communicates with other applications through integrations and
-exposes observability metrics to support monitoring and alerting.
+The aproxy charm communicates with other applications through integrations.
+Understanding the charm architecture provides the structural context
+needed to see how those settings interact at runtime.
 
 .. toctree::
     :maxdepth: 1
 
+    Charm architecture <charm-architecture>
     Integrations <integrations>
-    Metrics <metrics>
