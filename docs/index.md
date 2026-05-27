@@ -67,7 +67,6 @@ Thinking about using the aproxy operator for your next project?
   1. [Actions](reference/actions.md)
   1. [Configurations](reference/configurations.md)
   1. [Integrations](reference/integrations.md)
-  1. [Metrics](reference/metrics.md)
   1. [Charm architecture](reference/charm-architecture.md)
 1. [Explanation](explanation)
   1. [Security](explanation/security.md)

@@ -6,8 +6,7 @@
 How-to guides
 =============
 
-The following guides cover key processes and common tasks for managing and
-using the aproxy charm.
+Manage the aproxy charm through its full operations lifecycle.
 
 .. vale Canonical.013-Spell-out-numbers-below-10 = NO
 .. vale Canonical.500-Repeated-words = NO
@@ -15,37 +14,25 @@ using the aproxy charm.
 Basic operations
 ----------------
 
-Once you've finished setting up the charm, now you can perform a number
-of actions with your deployment. These guides provide instructions on
-basic operations you can complete with the charm.
+Day-to-day tasks such as configuring proxy settings and integrating with
+observability tools keep your aproxy deployment functioning correctly and
+connected to the rest of your infrastructure.
 
 .. toctree::
-    :hidden:
     :maxdepth: 1
 
     Configure <configure>
     Integrate with COS <integrate-with-cos>
 
-Update and refresh
-------------------
+Maintenance and development
+---------------------------
 
-The following guides provide instructions on upgrading your deployment,
-including backup and restore processes.
+Upgrades, backups, and community contributions ensure the aproxy
+charm stays current, reliable, and benefits from ongoing improvements.
 
 .. toctree::
-    :hidden:
     :maxdepth: 1
 
     Back up and restore <back-up-restore>
     Upgrade <upgrade>
-
-Development
------------
-
-These guides can help you with contributing to the project.
-
-.. toctree::
-    :hidden:
-    :maxdepth: 1
-
     Contribute <contribute>
