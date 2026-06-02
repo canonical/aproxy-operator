@@ -11,7 +11,7 @@ run "basic_deploy" {
   variables {
     model_uuid = run.setup_tests.model_uuid
     # renovate: depName="aproxy"
-    revision = 84
+    revision = 88
   }
 
   assert {
