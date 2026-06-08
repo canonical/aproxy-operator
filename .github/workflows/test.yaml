@@ -10,6 +10,6 @@ jobs:
     permissions:
       pull-requests: write
     with:
-      self-hosted-runner: true
-      self-hosted-runner-label: "edge"
+      self-hosted-runner: false
+      runs-on-base: ubuntu-24.04
       with-uv: true
