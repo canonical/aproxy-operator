@@ -16,4 +16,4 @@ jobs:
     with:
       working-directory: .
       spread-jobs-include: "*tests/integration*"
-      build-timeout-minutes: 100
+      build-timeout-minutes: 120
