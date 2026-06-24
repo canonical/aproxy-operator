@@ -1,0 +1,29 @@
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+"""Fixtures for charm tests."""
+
+
+def pytest_addoption(parser):
+    """Add custom command-line options to pytest.
+
+    Args:
+        parser: The pytest command-line parser.
+    """
+    parser.addoption(
+        "--model",
+        action="store",
+        help="Use an existing Juju model instead of creating a temporary one",
+    )
+    parser.addoption(
+        "--keep-models",
+        action="store_true",
+        default=False,
+        help="Keep Juju models around after tests instead of destroying them",
+    )
+    parser.addoption(
+        "--base",
+        action="store",
+        default="24.04",
+        help="Ubuntu base version to test",
+    )
