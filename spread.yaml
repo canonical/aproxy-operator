@@ -1,18 +1,45 @@
 # Copyright 2026 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-project: aproxy-operator
+project: aproxy
 
-path: /aproxy-operator
+path: /home/ubuntu/proj
+
+kill-timeout: 60m
+warn-timeout: 1m
+
+backends:
+  integration-test:
+    type: integration-test
+    systems:
+      - ubuntu-24.04:
+          runner: [ubuntu-24.04]
+          arch: amd64
+          cpu: 4
+          memory: 8
+          disk: 40
+      - ubuntu-24.04-arm64:
+          runner: [ubuntu-24.04-arm]
+          arch: arm64
+          cpu: 4
+          memory: 8
+          disk: 40
+      - ubuntu-24.04-ppc64el:
+          runner: [self-hosted-linux-ppc64el-noble-medium]
+          arch: ppc64el
+          cpu: 4
+          memory: 8
+          disk: 40
+      - ubuntu-24.04-s390x:
+          runner: [self-hosted-linux-s390x-noble-medium]
+          arch: s390x
+          cpu: 4
+          memory: 8
+          disk: 40
+
 environment:
-  PROJECT_PATH: /aproxy-operator
-
-  # important to ensure adhoc and linode/qemu behave the same
-  SUDO_USER: ""
-  SUDO_UID: ""
-
-  LANG: "C.UTF-8"
-  LANGUAGE: "en"
+  CONCIERGE: '$(HOST: echo "${CONCIERGE:-concierge.yaml}")'
+  OPCLI_GIT_REF: '$(HOST: echo "${OPCLI_GIT_REF:-main}")'
 
 exclude:
   - .git
@@ -20,43 +47,22 @@ exclude:
   - .tox
   - .venv
   - .*_cache
-  - charmcraft
-  - libexec
-  - schema
-  - snap
+  - build
 
-backends:
-  github-ci:
-    type: adhoc
-    allocate: |
-      echo "Allocating ad-hoc $SPREAD_SYSTEM"
-      if [ -z "${GITHUB_RUN_ID:-}" ]; then
-        FATAL "this back-end only works inside GitHub CI"
-        exit 1
-      fi
-      echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/99-spread-users
-      ADDRESS localhost:22
-    discard: |
-      echo "Discarding ad-hoc $SPREAD_SYSTEM"
-    systems:
-      - ubuntu-24.04-64:
-          username: ubuntu
-          password: ubuntu
-          workers: 1
-
-prepare: |
-  snap refresh --hold
-
-  if systemctl is-enabled unattended-upgrades.service; then
-    systemctl stop unattended-upgrades.service
-    systemctl mask unattended-upgrades.service
-  fi
-
-  sudo snap install --classic concierge
-  sudo concierge prepare -p machine
+integration-suites:
+  tests/integration/:
+    working-dir: ./
+    summary: aproxy integration tests
+    backends:
+      - integration-test
+    pytest-arguments-template: |
+      --model testing
+      --keep-models
 
 suites:
-  tests/spread/:
-    summary: tutorial test
+  tests/spread/tutorial/:
+    summary: aproxy tutorial smoke test
     systems:
-      - ubuntu-24.04-64
+      - ubuntu-24.04
+    environment:
+      TUTORIAL: docs/tutorial.md
