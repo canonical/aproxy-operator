@@ -7,11 +7,10 @@ charms:
     charmcraft-yaml: charmcraft.yaml
     platforms:
       - arch: amd64
-        runner: [ubuntu-26.04]
+        runner: [ubuntu-24.04]
       - arch: arm64
-        runner: [ubuntu-26.04-arm]
+        runner: [ubuntu-24.04-arm]
       - arch: ppc64el
-        runner: [self-hosted-linux-ppc64el-resolute-medium]
+        runner: [self-hosted-linux-ppc64el-noble-edge]
       - arch: s390x
-        runner: [self-hosted-linux-s390x-resolute-medium]
-
+        runner: [self-hosted-linux-s390x-noble-medium]
