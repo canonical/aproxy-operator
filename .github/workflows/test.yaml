@@ -10,6 +10,4 @@ jobs:
     permissions:
       pull-requests: write
     with:
-      self-hosted-runner: true
-      self-hosted-runner-label: "edge"
       with-uv: true
