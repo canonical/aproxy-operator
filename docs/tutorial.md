@@ -259,4 +259,4 @@ multipass delete --purge my-juju-vm
 
 ## Next steps
 
-Visit the [aproxy charm documentation](https://charmhub.io/aproxy/docs) for advanced usage and configuration options.
+Visit the [aproxy charm documentation](https://charmhub.io/aproxy/docs) for more advanced usage and configuration options.
