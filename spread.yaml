@@ -25,13 +25,13 @@ backends:
           memory: 8
           disk: 40
       - ubuntu-24.04-ppc64el:
-          runner: [self-hosted-linux-ppc64el-noble-medium]
+          runner: [self-hosted-linux-ppc64el-resolute-medium]
           arch: ppc64el
           cpu: 4
           memory: 8
           disk: 40
       - ubuntu-24.04-s390x:
-          runner: [self-hosted-linux-s390x-noble-medium]
+          runner: [self-hosted-linux-s390x-resolute-medium]
           arch: s390x
           cpu: 4
           memory: 8
