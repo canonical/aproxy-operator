@@ -111,14 +111,6 @@ dependency_groups = [ "static" ]
 
 [env.integration]
 description = "Run integration tests"
-runner = "uv-venv-runner"
-deps = [
-  "jubilant",
-  "juju==3.6.*",
-  "opcli @ git+https://github.com/canonical/charm-ci.git",
-  "pytest",
-  "pytest-asyncio",
-]
 passenv = [
   "HOME",
   "JUJU_*",
@@ -138,6 +130,7 @@ commands = [
     { replace = "posargs", extend = "true" },
   ],
 ]
+dependency_groups = [ "integration" ]
 
 [env.lint-fix]
 description = "Apply coding style standards to code"
