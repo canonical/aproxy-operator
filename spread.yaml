@@ -54,10 +54,14 @@ integration-suites:
     summary: aproxy integration tests
     backends:
       - integration-test
+    environment:
+      BASE/20.04: "20.04"
+      BASE/22.04: "22.04"
+      BASE/24.04: "24.04"
     pytest-arguments-template: |
       --model testing
       --keep-models
-
+      --base {{ env.get("BASE", "") }}
 suites:
   tests/spread/tutorial/:
     summary: aproxy tutorial smoke test
