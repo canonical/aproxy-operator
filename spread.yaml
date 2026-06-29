@@ -57,11 +57,10 @@ integration-suites:
     environment:
       BASE/focal: "20.04"
       BASE/jammy: "22.04"
-      BASE/noble: "24.04"
     pytest-arguments-template: |
       --model testing
       --keep-models
-      --base {{ env.get("BASE", "") }}
+      --base {{ env.get("BASE", "24.04") }}
 suites:
   tests/spread/tutorial/:
     summary: aproxy tutorial smoke test
