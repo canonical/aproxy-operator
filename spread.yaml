@@ -52,11 +52,16 @@ integration-suites:
   tests/integration/:
     working-dir: ./
     summary: aproxy integration tests
+    auto-discover: false
     backends:
       - integration-test
     environment:
+      MODULE/focal: tests/integration/test_charm.py
+      MODULE/jammy: tests/integration/test_charm.py
+      MODULE/noble: tests/integration/test_charm.py
       BASE/focal: "20.04"
       BASE/jammy: "22.04"
+      BASE/noble: "24.04"
     pytest-arguments-template: |
       --model testing
       --keep-models
