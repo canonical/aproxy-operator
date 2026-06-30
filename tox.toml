@@ -111,6 +111,13 @@ dependency_groups = [ "static" ]
 
 [env.integration]
 description = "Run integration tests"
+passenv = [
+  "HOME",
+  "JUJU_*",
+  "KUBECONFIG",
+  "OPCLI_ARTIFACTS_BUILD_YAML",
+  "SPREAD_JOB",
+]
 commands = [
   [
     "pytest",

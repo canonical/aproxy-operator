@@ -4,8 +4,6 @@
 # pylint: disable=unused-argument
 """Fixtures for charm tests."""
 
-import pathlib
-import subprocess  # nosec B404
 import typing
 
 import jubilant
@@ -15,46 +13,22 @@ from tests.integration.tinyproxy import deploy_tinyproxy
 
 
 @pytest.fixture(name="aproxy_charm_file", scope="session")
-def aproxy_charm_file_fixture(pytestconfig: pytest.Config) -> str:
-    """Build or get the aproxy charm file.
+def aproxy_charm_file_fixture(charm_paths: dict, pytestconfig: pytest.Config) -> str:
+    """Return the path to the built aproxy charm for the requested base.
+
+    The ``charm_paths`` fixture is provided by the opcli (canonical/charm-ci)
+    pytest plugin and resolves builds from ``artifacts.build.yaml`` for the
+    current architecture.
 
     Args:
+        charm_paths: Mapping of charm name to its per-base build paths.
         pytestconfig: Pytest configuration object.
 
     Returns:
-        Path to the built or provided aproxy charm file.
+        Path to the built aproxy charm file for the requested base.
     """
-    charms = pytestconfig.getoption("--charm-file")
     base = pytestconfig.getoption("--base")
-
-    if charms:
-        # Filter by requested base
-        matching_charms = [file for file in charms if base in file]
-        if matching_charms:
-            return matching_charms[0]
-        raise AssertionError(f"No matching charm found for base {base}.")
-
-    # Otherwise, build the charm for the requested base
-    base_index_map = {"20.04": 0, "22.04": 1, "24.04": 2}
-    bases_index = base_index_map.get(base, 2)
-
-    try:
-        subprocess.run(  # nosec B603
-            ["/usr/bin/charmcraft", "pack", f"--bases-index={bases_index}"],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    except subprocess.CalledProcessError as exc:
-        raise OSError(f"Error packing charm: {exc}; Stderr:\n{exc.stderr}") from None
-
-    charm_path = pathlib.Path(__file__).parent.parent.parent
-    charms = [p.absolute() for p in charm_path.glob("aproxy_*.charm")]
-    # Filter for the requested base
-    matching_charms = [c for c in charms if base in str(c)]
-    if matching_charms:
-        return str(matching_charms[0])
-    raise AssertionError(f"No matching charm found for base {base}.")
+    return str(charm_paths["aproxy"][f"ubuntu@{base}"])
 
 
 @pytest.fixture(name="juju", scope="module")
@@ -103,7 +77,7 @@ def deploy_charms_fixture(
         pytestconfig: Pytest configuration object.
     """
     base = pytestconfig.getoption("--base", default="24.04")
-    juju.deploy("ubuntu", base=f"ubuntu@{base}", constraints={"virt-type": "virtual-machine"})
+    juju.deploy("ubuntu", base=f"ubuntu@{base}")
     juju.deploy(aproxy_charm_file)
     juju.integrate("ubuntu", "aproxy")
     juju.cli("config", "aproxy", f"proxy-address={tinyproxy_url}:8888")

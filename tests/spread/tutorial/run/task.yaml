@@ -1,0 +1,10 @@
+# Copyright 2026 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+summary: Run the aproxy tutorial end-to-end
+
+execute: |
+  runuser -l ubuntu -s /bin/bash -c \
+    'set -ex; . <(opcli tutorial expand -- "$1")' \
+    _ "${SPREAD_PATH}/${TUTORIAL}"
+

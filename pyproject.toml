@@ -34,8 +34,6 @@ lint = [
   "ops[testing]",
   "pep8-naming",
   "pytest",
-  "pytest-asyncio",
-  "pytest-operator",
   "requests",
   "ruff",
   "types-pyyaml",
@@ -54,14 +52,9 @@ static = [
   "bandit[toml]",
 ]
 integration = [
-  "allure-pytest>=2.8.18",
-  "allure-pytest-collection-report @ git+https://github.com/canonical/data-platform-workflows@v24.0.0#subdirectory=python/pytest_plugins/allure_pytest_collection_report",
-  "coverage[toml]",
   "jubilant",
-  "juju==3.6.*",
-  "ops[testing]",
+  "opcli @ git+https://github.com/canonical/charm-ci.git ; python_full_version >= '3.12'",
   "pytest",
-  "pytest-asyncio",
 ]
 
 [tool.uv]

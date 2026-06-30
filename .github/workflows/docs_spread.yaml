@@ -8,9 +8,12 @@ on:
 
 jobs:
   tutorial-spread-test:
-    uses: canonical/operator-workflows/.github/workflows/docs_spread.yaml@main
+    uses: canonical/charm-ci/.github/workflows/integration-test.yml@main
     secrets: inherit
+    permissions:
+      contents: read
+      packages: write
+      actions: read
     with:
-      input-file: docs/tutorial.md
-      output-dir: tests/spread/tutorial/
-      spread-job: github-ci:ubuntu-24.04-64:tests/spread/tutorial
+      working-directory: .
+      spread-jobs-include: "*tests/spread/tutorial*"
