@@ -41,6 +41,48 @@ logger = logging.getLogger(__name__)
 NFT_CONF_DIR = Path("/opt/aproxy-charm")
 NFT_CONF_FILE = NFT_CONF_DIR / "nftables.conf"
 SYSTEMD_UNIT_PATH = Path("/etc/systemd/system/aproxy-nftables.service")
+NFT_KERNEL_MODULES = (
+    "nf_conntrack",
+    "nf_defrag_ipv4",
+    "nf_defrag_ipv6",
+    "nf_nat",
+    "nf_tables",
+    "nft_chain_nat",
+    "nft_compat",
+    "nft_connlimit",
+    "nft_counter",
+    "nft_ct",
+    "nft_dup_ipv4",
+    "nft_dup_ipv6",
+    "nft_dup_netdev",
+    "nft_fib",
+    "nft_fib_inet",
+    "nft_fib_ipv4",
+    "nft_fib_ipv6",
+    "nft_fib_netdev",
+    "nft_flow_offload",
+    "nft_fwd_netdev",
+    "nft_hash",
+    "nft_limit",
+    "nft_log",
+    "nft_masq",
+    "nft_nat",
+    "nft_numgen",
+    "nft_osf",
+    "nft_queue",
+    "nft_quota",
+    "nft_redir",
+    "nft_reject",
+    "nft_reject_inet",
+    "nft_reject_ipv4",
+    "nft_reject_ipv6",
+    "nft_reject_netdev",
+    "nft_socket",
+    "nft_synproxy",
+    "nft_tproxy",
+    "nft_tunnel",
+    "nft_xfrm",
+)
 DEFAULT_APROXY_PORT = 8443
 APROXY_SNAP_NAME = "aproxy"
 DEFAULT_PROXY_PORT = 80
@@ -452,6 +494,30 @@ class AproxyManager:
             logger.error("Failed to install nftables package: %s", exc)
             raise NftApplyError(exc, "nftables package installation failed") from exc
 
+    def _load_kernel_modules(self) -> None:
+        """Load the netfilter kernel modules required by the nftables rules.
+
+        On ubuntu 26.04, netfilter kernel modules are not autoloaded.
+        """
+        try:
+            # modprobe -a keeps loading the remaining modules when one of them fails.
+            result = subprocess.run(  # nosec B603
+                ["/usr/sbin/modprobe", "-a", *NFT_KERNEL_MODULES],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        except OSError as exc:
+            logger.warning("failed to run modprobe: %s", exc)
+            return
+
+        if result.returncode:
+            logger.debug(
+                "some netfilter kernel modules were not loaded, "
+                "they may be missing or built into the kernel: %s",
+                result.stderr.strip(),
+            )
+
     def check_relation_availability(self) -> tuple[ops.model.Relation, ops.model.Binding]:
         """Check if the Juju relation is available for topology resolution.
 
@@ -484,6 +550,7 @@ class AproxyManager:
             NftApplyError: If applying the nft command fails.
         """
         self._ensure_nftables_installed()
+        self._load_kernel_modules()
 
         # Write nft config to disk
         NFT_CONF_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -517,21 +584,24 @@ class AproxyManager:
 
         This is needed since the nft configuration will be removed on server reboot.
         """
-        content = f"""
-        [Unit]
-        Description=Aproxy nftables rules
-        After=network-online.target
-        Wants=network-online.target
+        content = textwrap.dedent(
+            f"""\
+            [Unit]
+            Description=Aproxy nftables rules
+            After=network-online.target
+            Wants=network-online.target
 
-        [Service]
-        Type=oneshot
-        ExecStart=/usr/sbin/nft -f {NFT_CONF_FILE}
-        RemainAfterExit=yes
+            [Service]
+            Type=oneshot
+            ExecStartPre=-/usr/sbin/modprobe -a {" ".join(NFT_KERNEL_MODULES)}
+            ExecStart=/usr/sbin/nft -f {NFT_CONF_FILE}
+            RemainAfterExit=yes
 
-        [Install]
-        WantedBy=multi-user.target
-        """
-        SYSTEMD_UNIT_PATH.write_text(textwrap.dedent(content), encoding="utf-8")
+            [Install]
+            WantedBy=multi-user.target
+            """
+        )
+        SYSTEMD_UNIT_PATH.write_text(content, encoding="utf-8")
         systemd.service_enable(SYSTEMD_UNIT_PATH.name)
         systemd.service_start(SYSTEMD_UNIT_PATH.name)
 
