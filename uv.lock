@@ -104,7 +104,7 @@ coverage-report = [
 fmt = [{ name = "ruff" }]
 integration = [
     { name = "jubilant" },
-    { name = "opcli", marker = "python_full_version >= '3.12'", git = "https://github.com/canonical/charm-ci.git" },
+    { name = "opcli", marker = "python_full_version >= '3.12'", git = "https://github.com/canonical/charm-ci.git?tag=v1.0.0" },
     { name = "pytest" },
 ]
 lint = [
@@ -1008,8 +1008,8 @@ wheels = [
 
 [[package]]
 name = "opcli"
-version = "0.0.1a10"
-source = { git = "https://github.com/canonical/charm-ci.git#f0746f4dab15ea08354d38024b188b38576b944a" }
+version = "1.0.0"
+source = { git = "https://github.com/canonical/charm-ci.git?tag=v1.0.0#0eef5b8cbef3ee74907850f790cab64bcf0499e5" }
 dependencies = [
     { name = "pydantic", version = "2.12.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "ruamel-yaml", marker = "python_full_version >= '3.12'" },
