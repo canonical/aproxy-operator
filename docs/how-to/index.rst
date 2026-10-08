@@ -22,7 +22,6 @@ connected to the rest of your infrastructure.
     :maxdepth: 1
 
     Configure <configure>
-    Integrate with COS <integrate-with-cos>
 
 Maintenance and development
 ---------------------------

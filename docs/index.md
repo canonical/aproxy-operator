@@ -71,7 +71,6 @@ Thinking about using the aproxy operator for your next project?
   1. [Back up and restore](how-to/back-up-restore.md)
   1. [Configure](how-to/configure.md)
   1. [Contribute](how-to/contribute.md)
-  1. [Integrate with COS](how-to/integrate-with-cos.md)
   1. [Upgrade](how-to/upgrade.md)
 1. [Reference](reference)
   1. [Actions](reference/actions.md)
