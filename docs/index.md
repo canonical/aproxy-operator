@@ -8,29 +8,38 @@ A [Juju](https://juju.is/) [charm](https://documentation.ubuntu.com/juju/3.6/ref
 
 The aproxy charm installs and configures the aproxy snap and applies nftables rules to transparently intercept outbound TCP traffic from a principal charm, forwarding it through an upstream proxy.
 
-Like any Juju charm, this charm supports one-line deployment, configuration, integration, scaling, and more.
-For aproxy, this includes:
+The charm supports:
 
 - Installing and configuring the aproxy snap.
-
 - Enforcing nftables rules to transparently redirect outbound traffic.
-
 - Forwarding TCP requests through a configurable upstream proxy.
-
 - Supporting exclusions for specific destinations (`exclude-addresses-from-proxy`).
-
 - Configurable interception ports (`intercept-ports`).
 
-The aproxy charm is a subordinate and can be attached to any principal application to ensure its outbound traffic is transparently proxied. It runs on machines hosting the principal charm and is compatible with a wide range of Juju-managed environments.
+The aproxy charm is a subordinate and attaches to a principal application. It runs on machines hosting the principal charm.
 
-This charm makes operating aproxy simple and straightforward for DevOps or SRE teams through Juju’s clean interface, ensuring consistent policy enforcement for egress traffic without requiring per-application configuration.
+DevOps or SRE teams can manage aproxy through Juju without requiring per-application proxy configuration.
 
 ## In this documentation
 
-|                                                                                                                                         |                                                                                                                                     |
-| --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| [Tutorials](https://charmhub.io/aproxy/docs/tutorial)</br> Get started - a hands-on introduction to using the charm for new users </br> | [How-to guides](https://charmhub.io/aproxy/docs/back-up-restore) </br> Step-by-step guides covering key operations and common tasks |
-| [Reference](https://charmhub.io/aproxy/docs/integrations) </br> Technical information - specifications, APIs, architecture              | [Explanation](https://charmhub.io/aproxy/docs/architecture) </br> Concepts - discussion and clarification of key topics             |
+| | |
+| --- | --- |
+| **Get started** | [Deploy the aproxy subordinate charm](https://charmhub.io/aproxy/docs/tutorial) |
+| **Deployment** | [Configure the upstream proxy](https://discourse.charmhub.io/t/aproxy-operator-documentation-how-to-configure/19043#p-39664-proxy-address-4) \| [Configuration options](https://charmhub.io/aproxy/configure) \| [Principal charm integration](https://charmhub.io/aproxy/docs/integrations) |
+| **Operations** | [Upgrade](https://charmhub.io/aproxy/docs/upgrade) \| [Back up and restore](https://charmhub.io/aproxy/docs/back-up-restore) \| [Actions](https://charmhub.io/aproxy/actions) |
+| **Traffic interception** | [Choose which ports to intercept](https://discourse.charmhub.io/t/aproxy-operator-documentation-how-to-configure/19043#p-39664-intercept-ports-6) \| [Exclude destinations from interception](https://discourse.charmhub.io/t/aproxy-operator-documentation-how-to-configure/19043#p-39664-exclude-addresses-from-proxy-5) |
+| **Design** | [Charm architecture](https://charmhub.io/aproxy/docs/architecture) |
+| **Security** | [Security overview](https://charmhub.io/aproxy/docs/security) |
+
+## How this documentation is organized
+
+This documentation uses the [Diátaxis documentation structure](https://diataxis.fr/).
+
+- The [Tutorial](https://charmhub.io/aproxy/docs/tutorial) takes you step-by-step through a basic deployment of the aproxy charm.
+- **How-to guides** assume basic familiarity with aproxy and provide step-by-step instructions for specific tasks, such as [configuring the charm](https://charmhub.io/aproxy/docs/configure), [upgrading](https://charmhub.io/aproxy/docs/upgrade), and [contributing](https://charmhub.io/aproxy/docs/contribute).
+- **Reference** provides technical information to consult as needed. Use it to look up [configuration options](https://charmhub.io/aproxy/configure), [actions](https://charmhub.io/aproxy/actions), and [integration details](https://charmhub.io/aproxy/docs/integrations).
+- **Explanation** provides background and context to help you understand the charm, including [security considerations](https://charmhub.io/aproxy/docs/security).
+- **Release notes** are not yet available for individual revisions. The [release policy](https://github.com/canonical/aproxy-operator/blob/main/docs/release-notes/landing-page.md) is available in the repository.
 
 ## Contributing to this documentation
 
@@ -57,6 +66,7 @@ Thinking about using the aproxy operator for your next project?
 
 # Contents
 
+1. [Tutorial](tutorial.md)
 1. [How-to](how-to)
   1. [Back up and restore](how-to/back-up-restore.md)
   1. [Configure](how-to/configure.md)

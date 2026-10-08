@@ -12,6 +12,7 @@ Place any unreleased changes here, that are subject to release in coming version
 
 - Added support for base ubuntu@26.04. Aproxy now supports 20.04, 22.04, 24.04, and 26.04.
 - Load the netfilter kernel modules required by the nftables rules before applying them.
+- Organize the documentation home page by user needs and explain its structure.
 
 # 2026-05-19
 - Add `aproxy-port` charm configuration to allow customizing the port that aproxy listens on.
