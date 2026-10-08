@@ -26,8 +26,8 @@ DevOps or SRE teams can manage aproxy through Juju without requiring per-applica
 | --- | --- |
 | **Get started** | [Deploy the aproxy subordinate charm](https://charmhub.io/aproxy/docs/tutorial) |
 | **Deployment** | [Configure the upstream proxy](https://discourse.charmhub.io/t/aproxy-operator-documentation-how-to-configure/19043#p-39664-proxy-address-4) \| [Configuration options](https://charmhub.io/aproxy/configure) \| [Principal charm integration](https://charmhub.io/aproxy/docs/integrations) |
-| **Operations** | [Upgrade](https://charmhub.io/aproxy/docs/upgrade) \| [Back up and restore](https://charmhub.io/aproxy/docs/back-up-restore) \| [Actions](https://charmhub.io/aproxy/actions) |
-| **Traffic interception** | [Choose which ports to intercept](https://discourse.charmhub.io/t/aproxy-operator-documentation-how-to-configure/19043#p-39664-intercept-ports-6) \| [Exclude destinations from interception](https://discourse.charmhub.io/t/aproxy-operator-documentation-how-to-configure/19043#p-39664-exclude-addresses-from-proxy-5) |
+| **Operations** | [Actions](https://charmhub.io/aproxy/actions) \| [Upgrade](https://charmhub.io/aproxy/docs/upgrade) \| [Back up and restore](https://charmhub.io/aproxy/docs/back-up-restore) |
+| **Traffic interception** | [Choose ports](https://discourse.charmhub.io/t/aproxy-operator-documentation-how-to-configure/19043#p-39664-intercept-ports-6) \| [Exclude destinations](https://discourse.charmhub.io/t/aproxy-operator-documentation-how-to-configure/19043#p-39664-exclude-addresses-from-proxy-5) |
 | **Design** | [Charm architecture](https://charmhub.io/aproxy/docs/architecture) |
 | **Security** | [Security overview](https://charmhub.io/aproxy/docs/security) |
 
