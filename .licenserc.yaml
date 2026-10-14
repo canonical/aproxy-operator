@@ -19,6 +19,7 @@ header:
   - '.jujuignore'
   - '.gitignore'
   - '.licenserc.yaml'
+  - '**/MAJOR_VERSION'
   - 'CODEOWNERS'
   - 'LICENSE'
   - 'trivy.yaml'

@@ -13,6 +13,13 @@ Place any unreleased changes here, that are subject to release in coming version
 - Added support for base ubuntu@26.04. Aproxy now supports 20.04, 22.04, 24.04, and 26.04.
 - Load the netfilter kernel modules required by the nftables rules before applying them.
 - Organize the documentation home page by user needs and explain its structure.
+- Migrated the `terraform/` module to the CC008 Charm Terraform Standard: renamed `versions.tf` to
+  `terraform.tf`, added the mandatory `constraints` variable and the `application`/`provides`/`requires`
+  outputs (replacing the deprecated `app_name` and `endpoints` outputs), added a `terraform/MAJOR_VERSION`
+  file, and wired the `terraform_modules_compliance`, `terraform_modules_release` and
+  `generate_terraform_docs` CI workflows. Note that the `base` variable now defaults to `null` (the
+  charm's default base) instead of `ubuntu@24.04`; pass `base = "ubuntu@24.04"` explicitly to keep the
+  previous default.
 
 # 2026-05-19
 - Add `aproxy-port` charm configuration to allow customizing the port that aproxy listens on.
