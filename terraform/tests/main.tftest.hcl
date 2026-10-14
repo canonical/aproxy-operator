@@ -22,7 +22,7 @@ run "basic_deploy" {
   }
 
   assert {
-    condition     = output.requires.value.endpoint == "juju-info"
-    error_message = "aproxy module should provide 'requires.value' output"
+    condition     = output.requires.juju_info.endpoint == "juju-info"
+    error_message = "aproxy module should provide 'requires.juju_info' output"
   }
 }
