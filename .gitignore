@@ -11,7 +11,7 @@ __pycache__/
 .mypy_cache
 *.egg-info/
 */*.rock
-terraform/tests/.terraform
+terraform/charm/tests/.terraform
 **/.terraform/
 **/.terraform.lock.hcl
 

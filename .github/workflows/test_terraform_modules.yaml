@@ -17,4 +17,4 @@ jobs:
     with:
       k8s-controller: false
       lxd-controller: true
-      terraform-directories: '["terraform"]'
+      terraform-directories: '["terraform/charm"]'
