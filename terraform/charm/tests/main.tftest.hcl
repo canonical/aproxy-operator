@@ -13,7 +13,7 @@ run "basic_deploy" {
     base       = "ubuntu@24.04"
     channel    = "latest/edge"
     # renovate: depName="aproxy"
-    revision = 318
+    revision = 334
   }
 
   assert {
