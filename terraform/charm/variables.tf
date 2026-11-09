@@ -5,18 +5,20 @@ variable "app_name" {
   description = "Application name for aproxy."
   type        = string
   default     = "aproxy"
+  nullable    = false
 }
 
 variable "base" {
   description = "The operating system on which to deploy"
   type        = string
-  default     = "ubuntu@24.04"
+  default     = null
 }
 
 variable "channel" {
   description = "The channel to use when deploying a charm."
   type        = string
   default     = "latest/stable"
+  nullable    = false
 }
 
 variable "config" {
@@ -25,9 +27,16 @@ variable "config" {
   default     = {}
 }
 
+variable "constraints" {
+  description = "Juju constraints to apply for this application."
+  type        = string
+  default     = null
+}
+
 variable "model_uuid" {
   description = "UUID of the Juju model where the application will be deployed."
   type        = string
+  nullable    = false
 }
 
 variable "revision" {
