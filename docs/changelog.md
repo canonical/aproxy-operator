@@ -10,7 +10,11 @@ Each revision is versioned by the date of the revision.
 
 Place any unreleased changes here, that are subject to release in coming versions :).
 
-- Added support for base ubuntu@26.04. Aproxy now supports 20.04, 22.04, 24.04, and 26.04.
+- Added support for base ubuntu@26.04. Aproxy now supports 22.04, 24.04, and 26.04.
+- Dropped support for base ubuntu@20.04. Packing the `core20` build base currently fails on
+  GitHub-hosted runners because their updated host kernel is incompatible with Focal's AppArmor
+  profile format, breaking `snapd` inside the managed build instance (see
+  [canonical/charmcraft#2816](https://github.com/canonical/charmcraft/issues/2816)).
 - Load the netfilter kernel modules required by the nftables rules before applying them.
 - Organize the documentation home page by user needs and explain its structure.
 - Migrated the Terraform module to the CC008 Charm Terraform Standard and moved it from `terraform/` to
