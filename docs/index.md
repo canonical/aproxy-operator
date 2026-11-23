@@ -28,7 +28,7 @@ DevOps or SRE teams can manage aproxy through Juju without requiring per-applica
 | **Deployment** | [Configure the upstream proxy](https://discourse.charmhub.io/t/aproxy-operator-documentation-how-to-configure/19043#p-39664-proxy-address-4) \| [Configuration options](https://charmhub.io/aproxy/configure) \| [Principal charm integration](https://charmhub.io/aproxy/docs/integrations) |
 | **Operations** | [Actions](https://charmhub.io/aproxy/actions) \| [Upgrade](https://charmhub.io/aproxy/docs/upgrade) \| [Back up and restore](https://charmhub.io/aproxy/docs/back-up-restore) |
 | **Traffic interception** | [Choose ports](https://discourse.charmhub.io/t/aproxy-operator-documentation-how-to-configure/19043#p-39664-intercept-ports-6) \| [Exclude destinations](https://discourse.charmhub.io/t/aproxy-operator-documentation-how-to-configure/19043#p-39664-exclude-addresses-from-proxy-5) |
-| **Design** | [Charm architecture](https://charmhub.io/aproxy/docs/architecture) |
+| **Design** | [Charm design](explanation/charm-design.md) \| [Charm architecture](https://charmhub.io/aproxy/docs/architecture) |
 | **Security** | [Security overview](https://charmhub.io/aproxy/docs/security) |
 
 ## How this documentation is organized
@@ -38,7 +38,7 @@ This documentation uses the [Diátaxis documentation structure](https://diataxis
 - The [Tutorial](https://charmhub.io/aproxy/docs/tutorial) takes you step-by-step through a basic deployment of the aproxy charm.
 - **How-to guides** assume basic familiarity with aproxy and provide step-by-step instructions for specific tasks, such as [configuring the charm](https://charmhub.io/aproxy/docs/configure), [upgrading](https://charmhub.io/aproxy/docs/upgrade), and [contributing](https://charmhub.io/aproxy/docs/contribute).
 - **Reference** provides technical information to consult as needed. Use it to look up [configuration options](https://charmhub.io/aproxy/configure), [actions](https://charmhub.io/aproxy/actions), and [integration details](https://charmhub.io/aproxy/docs/integrations).
-- **Explanation** provides background and context to help you understand the charm, including [security considerations](https://charmhub.io/aproxy/docs/security).
+- **Explanation** provides background and context to help you understand the [charm design](explanation/charm-design.md) and its [security considerations](https://charmhub.io/aproxy/docs/security).
 - **Release notes** are not yet available for individual revisions. The [release policy](https://github.com/canonical/aproxy-operator/blob/main/docs/release-notes/landing-page.md) is available in the repository.
 
 ## Contributing to this documentation
@@ -78,6 +78,7 @@ Thinking about using the aproxy operator for your next project?
   1. [Integrations](reference/integrations.md)
   1. [Charm architecture](reference/charm-architecture.md)
 1. [Explanation](explanation)
+  1. [Charm design](explanation/charm-design.md)
   1. [Security](explanation/security.md)
 1. [Release notes](release-notes)
   1. [Overview](release-notes/landing-page.md)
