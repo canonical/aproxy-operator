@@ -10,9 +10,8 @@ proxying without changing the principal application.
 
 Aproxy is a machine subordinate: it is attached to a principal application
 through Juju's `juju-info` integration and runs alongside each principal
-unit. Co-location gives it access to the unit's networking, so it can manage
-traffic interception without requiring the principal charm to implement a
-proxy integration.
+unit. Co-location lets aproxy intercept traffic without requiring the
+principal charm to support proxy configuration.
 
 The charm manages the aproxy snap and nftables rules on the machine. The snap
 provides the proxying functionality; the charm configures it and maintains the
